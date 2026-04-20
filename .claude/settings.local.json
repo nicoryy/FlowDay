@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cp C:/Users/nicory/projects/FlowDay/CONTEXT.md C:/Users/nicory/projects/FlowDay/docs/CONTEXT.md)",
+      "Bash(cp C:/Users/nicory/projects/FlowDay/TODO.md C:/Users/nicory/projects/FlowDay/docs/TODO.md)",
+      "Bash(cp C:/Users/nicory/projects/FlowDay/RAW_IDEIA.md C:/Users/nicory/projects/FlowDay/docs/RAW_IDEIA.md)",
+      "Bash(cp C:/Users/nicory/projects/FlowDay/CLAUDE.md C:/Users/nicory/projects/FlowDay/docs/CLAUDE.md)",
+      "Bash(rm C:/Users/nicory/projects/FlowDay/CONTEXT.md C:/Users/nicory/projects/FlowDay/TODO.md C:/Users/nicory/projects/FlowDay/RAW_IDEIA.md)",
+      "Bash(uv sync *)",
+      "Bash(uv run *)"
+    ]
+  }
+}

@@ -1,15 +1,18 @@
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarDays, RefreshCw, Trash2 } from "lucide-react";
+import { CalendarDays, RefreshCw, Trash2, LayoutList, Kanban } from "lucide-react";
 import { scheduleApi } from "@/api/schedule";
 import { ApiError } from "@/api/client";
 import { toast } from "@/stores/toast";
 import { Timeline, TimelineLegend } from "@/components/timeline/Timeline";
+import { KanbanBoard } from "@/components/kanban/KanbanBoard";
 import type { ScheduleResponse } from "@/api/types";
 
 const TODAY = new Date().toISOString().split("T")[0];
 
 export function Dashboard() {
   const qc = useQueryClient();
+  const [viewMode, setViewMode] = useState<"timeline" | "kanban">("timeline");
 
   const { data: schedule, isLoading } = useQuery<ScheduleResponse | null>({
     queryKey: ["schedule", TODAY],
@@ -62,6 +65,15 @@ export function Dashboard() {
           </p>
         </div>
         <div className="flex gap-2">
+          {/* View mode toggle */}
+          <button
+            onClick={() => setViewMode((v) => (v === "timeline" ? "kanban" : "timeline"))}
+            className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm text-text-muted hover:text-text-secondary transition-colors"
+          >
+            {viewMode === "timeline" ? <Kanban size={14} /> : <LayoutList size={14} />}
+            {viewMode === "timeline" ? "Kanban" : "Timeline"}
+          </button>
+
           {schedule && (
             <button
               onClick={() => {
@@ -144,19 +156,23 @@ export function Dashboard() {
             </div>
           )}
 
-          {/* Timeline SVG */}
-          <div className="rounded-lg border border-border bg-background-secondary p-4 space-y-3">
-            {schedule.blocks.length === 0 ? (
-              <p className="text-text-muted text-sm text-center py-6">
-                Nenhuma tarefa pendente foi alocada.
-              </p>
-            ) : (
-              <>
-                <Timeline schedule={schedule} />
-                <TimelineLegend />
-              </>
-            )}
-          </div>
+          {/* Timeline / Kanban */}
+          {viewMode === "timeline" ? (
+            <div className="rounded-lg border border-border bg-background-secondary p-4 space-y-3">
+              {schedule.blocks.length === 0 ? (
+                <p className="text-text-muted text-sm text-center py-6">
+                  Nenhuma tarefa pendente foi alocada.
+                </p>
+              ) : (
+                <>
+                  <Timeline schedule={schedule} />
+                  <TimelineLegend />
+                </>
+              )}
+            </div>
+          ) : (
+            <KanbanBoard sessionId={schedule.session_id} />
+          )}
 
           {/* Overflow */}
           {schedule.overflow.length > 0 && (

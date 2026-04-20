@@ -100,3 +100,37 @@ export interface UserConfigUpdate {
   timezone?: string;
   notifications_enabled?: boolean;
 }
+
+export type StatsPeriod = "day" | "week";
+
+export interface DailyStat {
+  date: string;
+  scheduled: number;
+  done: number;
+  logged_minutes: number;
+  completion_rate: number;
+}
+
+export interface PriorityStat {
+  priority: 1 | 2 | 3;
+  label: string;
+  done: number;
+  total_minutes: number;
+}
+
+export interface StatsSummary {
+  total_scheduled: number;
+  total_done: number;
+  completion_rate: number;
+  total_logged_minutes: number;
+  avg_deviation_minutes: number;
+}
+
+export interface StatsResponse {
+  period: StatsPeriod;
+  date_from: string;
+  date_to: string;
+  summary: StatsSummary;
+  daily: DailyStat[];
+  by_priority: PriorityStat[];
+}

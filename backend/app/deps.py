@@ -6,10 +6,12 @@ from app.repositories.audit_repository import AuditRepository
 from app.repositories.config_repository import ConfigRepository
 from app.repositories.log_repository import LogRepository
 from app.repositories.schedule_repository import ScheduleRepository
+from app.repositories.stats_repository import StatsRepository
 from app.repositories.task_repository import TaskRepository
 from app.services.config_service import ConfigService
 from app.services.log_service import LogService
 from app.services.scheduler_service import SchedulerService
+from app.services.stats_service import StatsService
 from app.services.task_service import TaskService
 
 
@@ -63,3 +65,13 @@ async def get_config_service(
     repo: ConfigRepository = Depends(get_config_repo),
 ) -> ConfigService:
     return ConfigService(db, repo)
+
+
+async def get_stats_repo(db: AsyncSession = Depends(get_db)) -> StatsRepository:
+    return StatsRepository(db)
+
+
+async def get_stats_service(
+    stats_repo: StatsRepository = Depends(get_stats_repo),
+) -> StatsService:
+    return StatsService(stats_repo)

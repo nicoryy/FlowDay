@@ -12,17 +12,39 @@ const PRIORITY_COLOR: Record<number, string> = {
   3: "#22c55e",
 };
 
+const PRIORITY_LABEL: Record<number, string> = {
+  1: "Alta",
+  2: "Média",
+  3: "Baixa",
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  scheduled: "Planejado",
+  in_progress: "Em andamento",
+  done: "Concluído",
+  pending: "Pendente",
+};
+
 const AXIS_H = 28;
 const BLOCK_H = 52;
 const SVG_H = AXIS_H + BLOCK_H + 12;
 const MIN_WIDTH = 640;
+const MIN_LABEL_W = 80;
+// suppress hour ticks within this distance of work start/end to avoid label overlap
+const TICK_EDGE_GUARD_MS = 25 * 60 * 1000;
+
+// Backend stores datetimes in SQLite without timezone — always treat as UTC
+function parseISO(iso: string): Date {
+  if (iso.endsWith("Z") || /[+-]\d{2}:\d{2}$/.test(iso)) return new Date(iso);
+  return new Date(iso + "Z");
+}
 
 function parseWorkTime(date: string, time: string): Date {
   return new Date(`${date}T${time}Z`);
 }
 
 function fmtTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString("pt-BR", {
+  return parseISO(iso).toLocaleTimeString("pt-BR", {
     hour: "2-digit",
     minute: "2-digit",
     timeZone: "UTC",
@@ -38,7 +60,18 @@ function hourTicks(workStart: Date, workEnd: Date): Date[] {
     ticks.push(new Date(cursor));
     cursor.setUTCHours(cursor.getUTCHours() + 1);
   }
-  return ticks;
+  // Filter ticks too close to work start/end to avoid overlapping static labels
+  return ticks.filter(
+    (t) =>
+      Math.abs(t.getTime() - workStart.getTime()) > TICK_EDGE_GUARD_MS &&
+      Math.abs(t.getTime() - workEnd.getTime()) > TICK_EDGE_GUARD_MS
+  );
+}
+
+interface HoverInfo {
+  block: ScheduledBlock;
+  x: number;
+  w: number;
 }
 
 interface BlockProps {
@@ -47,9 +80,10 @@ interface BlockProps {
   w: number;
   sessionId: string;
   onMutated: () => void;
+  onHoverChange: (info: HoverInfo | null) => void;
 }
 
-function TimelineBlock({ block, x, w, sessionId, onMutated }: BlockProps) {
+function TimelineBlock({ block, x, w, sessionId, onMutated, onHoverChange }: BlockProps) {
   const qc = useQueryClient();
 
   const startMutation = useMutation({
@@ -84,16 +118,12 @@ function TimelineBlock({ block, x, w, sessionId, onMutated }: BlockProps) {
   const isDone = status === "done";
   const isActive = status === "in_progress";
 
-  const bgColor = isDone
-    ? "#16a34a22"
-    : isActive
-      ? "#7c3aed33"
-      : "#ffffff0a";
+  const bgColor = isDone ? "#16a34a22" : isActive ? "#7c3aed33" : "#ffffff0a";
   const borderColor = isDone ? "#16a34a66" : isActive ? "#7c3aed" : "#27272a";
   const textColor = isDone ? "#4ade8099" : isActive ? "#c4b5fd" : "#f4f4f5";
 
-  const MIN_LABEL_W = 80;
   const loading = startMutation.isPending || completeMutation.isPending;
+  const isNarrow = w < MIN_LABEL_W;
 
   return (
     <g
@@ -104,6 +134,8 @@ function TimelineBlock({ block, x, w, sessionId, onMutated }: BlockProps) {
         if (isActive) completeMutation.mutate();
         else startMutation.mutate();
       }}
+      onMouseEnter={() => onHoverChange({ block, x, w })}
+      onMouseLeave={() => onHoverChange(null)}
     >
       {/* Block body */}
       <rect
@@ -117,8 +149,8 @@ function TimelineBlock({ block, x, w, sessionId, onMutated }: BlockProps) {
       {/* Priority stripe */}
       <rect width={3} height={BLOCK_H} rx={2} fill={color} opacity={isDone ? 0.4 : 0.9} />
 
-      {/* Label */}
-      {w >= MIN_LABEL_W && (
+      {/* Label — only when wide enough */}
+      {!isNarrow && (
         <>
           <text
             x={10}
@@ -177,6 +209,7 @@ export function Timeline({ schedule }: TimelineProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [svgWidth, setSvgWidth] = useState(MIN_WIDTH);
   const [, forceUpdate] = useState(0);
+  const [hovered, setHovered] = useState<HoverInfo | null>(null);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -194,7 +227,7 @@ export function Timeline({ schedule }: TimelineProps) {
   const totalMs = workEnd.getTime() - workStart.getTime();
 
   const toX = (iso: string) =>
-    ((new Date(iso).getTime() - workStart.getTime()) / totalMs) * svgWidth;
+    ((parseISO(iso).getTime() - workStart.getTime()) / totalMs) * svgWidth;
   const toW = (mins: number) => (mins / (totalMs / 60000)) * svgWidth;
 
   const ticks = hourTicks(workStart, workEnd);
@@ -203,8 +236,12 @@ export function Timeline({ schedule }: TimelineProps) {
   const nowInRange = nowMs >= workStart.getTime() && nowMs <= workEnd.getTime();
   const nowX = ((nowMs - workStart.getTime()) / totalMs) * svgWidth;
 
+  // Tooltip positioning — centered on block, above the SVG blocks area
+  const tooltipLeft = hovered ? hovered.x + hovered.w / 2 : 0;
+  const tooltipBlock = hovered?.block;
+
   return (
-    <div ref={containerRef} className="overflow-x-auto">
+    <div ref={containerRef} className="relative overflow-x-auto">
       <svg
         width={svgWidth}
         height={SVG_H}
@@ -216,7 +253,7 @@ export function Timeline({ schedule }: TimelineProps) {
         {/* Axis baseline */}
         <line x1={0} y1={AXIS_H} x2={svgWidth} y2={AXIS_H} stroke="#27272a" strokeWidth={1} />
 
-        {/* Hour ticks */}
+        {/* Hour ticks — filtered to avoid overlap with work start/end labels */}
         {ticks.map((tick) => {
           const x = ((tick.getTime() - workStart.getTime()) / totalMs) * svgWidth;
           return (
@@ -240,8 +277,8 @@ export function Timeline({ schedule }: TimelineProps) {
           );
         })}
 
-        {/* Work start/end labels */}
-        <text x={4} y={AXIS_H - 8} fontSize={9} fontFamily="JetBrains Mono, monospace" fill="#3f3f46">
+        {/* Work start/end labels — always visible, outside the filtered tick zone */}
+        <text x={4} y={AXIS_H - 8} fontSize={9} fontFamily="JetBrains Mono, monospace" fill="#71717a">
           {schedule.work_start.slice(0, 5)}
         </text>
         <text
@@ -250,7 +287,7 @@ export function Timeline({ schedule }: TimelineProps) {
           textAnchor="end"
           fontSize={9}
           fontFamily="JetBrains Mono, monospace"
-          fill="#3f3f46"
+          fill="#71717a"
         >
           {schedule.work_end.slice(0, 5)}
         </text>
@@ -267,6 +304,7 @@ export function Timeline({ schedule }: TimelineProps) {
               w={w}
               sessionId={schedule.session_id}
               onMutated={() => forceUpdate((n) => n + 1)}
+              onHoverChange={setHovered}
             />
           );
         })}
@@ -287,6 +325,40 @@ export function Timeline({ schedule }: TimelineProps) {
           </g>
         )}
       </svg>
+
+      {/* Hover tooltip for all blocks (essential for narrow ones) */}
+      {tooltipBlock && (
+        <div
+          className="pointer-events-none absolute z-20 min-w-[160px] max-w-[220px] rounded-lg border border-border bg-background-secondary px-3 py-2.5 shadow-xl transition-opacity duration-100"
+          style={{
+            left: Math.min(Math.max(tooltipLeft, 80), svgWidth - 80),
+            bottom: "100%",
+            transform: "translateX(-50%)",
+            marginBottom: 4,
+          }}
+        >
+          <p className="text-xs font-medium text-text-primary leading-snug mb-1">
+            {tooltipBlock.task_title}
+          </p>
+          <p className="text-[10px] font-mono text-text-muted">
+            {fmtTime(tooltipBlock.planned_start)}–{fmtTime(tooltipBlock.planned_end)}
+          </p>
+          <div className="flex items-center gap-2 mt-1.5">
+            <span
+              className="h-1.5 w-1.5 rounded-full"
+              style={{ backgroundColor: PRIORITY_COLOR[tooltipBlock.priority] ?? "#6d28d9" }}
+            />
+            <span className="text-[10px] text-text-muted">
+              {PRIORITY_LABEL[tooltipBlock.priority] ?? "—"} · {tooltipBlock.estimated_minutes}min
+            </span>
+          </div>
+          {tooltipBlock.task_status !== "scheduled" && (
+            <p className="text-[10px] text-purple-accent mt-0.5">
+              {STATUS_LABEL[tooltipBlock.task_status] ?? tooltipBlock.task_status}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -308,7 +380,12 @@ export function TimelineLegend() {
       </div>
       <div className="flex items-center gap-1.5">
         <Clock size={10} />
-        <span>Prioridade: <span className="text-red-400">Alta</span> · <span className="text-yellow-400">Média</span> · <span className="text-green-400">Baixa</span></span>
+        <span>
+          Prioridade:{" "}
+          <span className="text-red-400">Alta</span> ·{" "}
+          <span className="text-yellow-400">Média</span> ·{" "}
+          <span className="text-green-400">Baixa</span>
+        </span>
       </div>
     </div>
   );

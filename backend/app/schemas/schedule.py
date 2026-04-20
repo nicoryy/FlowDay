@@ -1,6 +1,6 @@
 import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, field_serializer
 
 from app.schemas.task import TaskRead
 
@@ -29,6 +29,13 @@ class ScheduledBlockRead(BaseModel):
     position: int
 
     model_config = {"from_attributes": True}
+
+    @field_serializer("planned_start", "planned_end")
+    def serialize_as_utc(self, dt: datetime.datetime) -> str:
+        # SQLite drops tzinfo on round-trip; always emit explicit Z so frontend parses as UTC
+        if dt.tzinfo is None:
+            return dt.isoformat() + "Z"
+        return dt.astimezone(datetime.timezone.utc).isoformat().replace("+00:00", "Z")
 
 
 class ScheduleResponse(BaseModel):
