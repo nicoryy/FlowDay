@@ -1,15 +1,33 @@
 import logging
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.database import async_session_factory
+from app.repositories.config_repository import ConfigRepository
+from app.routers import tasks
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    async with async_session_factory() as session:
+        repo = ConfigRepository(session)
+        await repo.get_or_create()
+    logger.info("FlowDay API started")
+    yield
+    logger.info("FlowDay API stopped")
+
 
 app = FastAPI(
     title="FlowDay API",
     description="Local-first task scheduler with auto-scheduling",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -19,6 +37,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(tasks.router)
 
 
 @app.get("/health", tags=["system"])

@@ -3,7 +3,7 @@
 > Backlog ativo do projeto. Trabalhar **em ordem**. Marcar itens com `[x]` ao concluir.
 > Decisões arquiteturais estão em `CONTEXT.md`. Diretrizes de código em `CLAUDE.md`.
 
-**Status geral:** 🚧 Fase 0 — Setup inicial
+**Status geral:** 🚧 Fase 4 — Backend: scheduler
 
 ---
 
@@ -11,14 +11,14 @@
 
 Meta: repositório funcional, ferramentas configuradas, CI básico rodando.
 
-- [ ] Inicializar repositório Git
-- [ ] Criar estrutura de pastas do monorepo conforme `CONTEXT.md` §7
-- [ ] Adicionar `.gitignore` apropriado (Python, Node, IDEs, envs, DBs)
-- [ ] Criar `README.md` inicial bilíngue (PT-BR principal, EN abaixo)
-- [ ] Adicionar `LICENSE` (sugestão: MIT)
-- [ ] Mover `CONTEXT.md`, `CLAUDE.md`, `RAW_IDEA.md`, `TODO.md` para `/docs`
+- [x] Inicializar repositório Git
+- [x] Criar estrutura de pastas do monorepo conforme `CONTEXT.md` §7
+- [x] Adicionar `.gitignore` apropriado (Python, Node, IDEs, envs, DBs)
+- [x] Criar `README.md` inicial bilíngue (PT-BR principal, EN abaixo)
+- [x] Adicionar `LICENSE` (sugestão: MIT)
+- [x] Mover `CONTEXT.md`, `CLAUDE.md`, `RAW_IDEA.md`, `TODO.md` para `/docs`
 - [ ] Configurar `pre-commit` hooks (ruff, eslint, prettier)
-- [ ] GitHub Actions — workflow básico de CI (lint + test) rodando em PRs
+- [x] GitHub Actions — workflow básico de CI (lint + test) rodando em PRs
 
 **DoD:** `git clone` + instruções do README = ambiente funcional em < 10 min.
 
@@ -28,17 +28,17 @@ Meta: repositório funcional, ferramentas configuradas, CI básico rodando.
 
 Meta: FastAPI rodando, DB conectado, migrations funcionando.
 
-- [ ] Instalar `uv` e inicializar `pyproject.toml` no `/backend`
-- [ ] Configurar Python 3.12+ e lock de dependências
-- [ ] Adicionar deps: `fastapi`, `uvicorn[standard]`, `sqlalchemy>=2.0`, `alembic`, `pydantic>=2`, `pydantic-settings`, `python-dotenv`
-- [ ] Adicionar deps dev: `pytest`, `pytest-asyncio`, `httpx`, `ruff`, `mypy`
-- [ ] Criar `app/config.py` com `Settings` (Pydantic) lendo `.env`
-- [ ] Criar `app/database.py` (engine, session, Base)
-- [ ] Criar `app/main.py` com FastAPI app + rota `/health`
-- [ ] Configurar CORS para localhost:5173 (Vite default)
-- [ ] Inicializar Alembic + gerar migration inicial (vazia)
-- [ ] Testar boot: `uvicorn app.main:app --reload` → 200 em `/health`
-- [ ] Configurar `ruff` (lint + format) e `mypy` (strict em `services/` e `models/`)
+- [x] Instalar `uv` e inicializar `pyproject.toml` no `/backend`
+- [x] Configurar Python 3.12+ e lock de dependências
+- [x] Adicionar deps: `fastapi`, `uvicorn[standard]`, `sqlalchemy>=2.0`, `alembic`, `pydantic>=2`, `pydantic-settings`, `python-dotenv`
+- [x] Adicionar deps dev: `pytest`, `pytest-asyncio`, `httpx`, `ruff`, `mypy`
+- [x] Criar `app/config.py` com `Settings` (Pydantic) lendo `.env`
+- [x] Criar `app/database.py` (engine, session, Base)
+- [x] Criar `app/main.py` com FastAPI app + rota `/health`
+- [x] Configurar CORS para localhost:5173 (Vite default)
+- [x] Inicializar Alembic + gerar migration inicial (vazia)
+- [x] Testar boot: `uvicorn app.main:app --reload` → 200 em `/health`
+- [x] Configurar `ruff` (lint + format) e `mypy` (strict em `services/` e `models/`)
 
 **DoD:** `uv run uvicorn app.main:app` sobe sem erro; `/health` retorna 200; migrations rodam com SQLite e com Postgres (testar os dois).
 
@@ -48,20 +48,20 @@ Meta: FastAPI rodando, DB conectado, migrations funcionando.
 
 Meta: todas as tabelas definidas, migrations aplicadas, repositórios com testes.
 
-- [ ] Modelo `UserConfig` (singleton)
-- [ ] Modelo `Task`
-- [ ] Modelo `WorkSession`
-- [ ] Modelo `ScheduledBlock`
-- [ ] Modelo `ExecutionLog`
-- [ ] Modelo `AuditLog`
-- [ ] Tipo custom para UUID (compatível SQLite + Postgres)
-- [ ] Gerar migration com todas as tabelas + aplicar
-- [ ] Criar seed inicial (config default do usuário)
-- [ ] `TaskRepository` — CRUD básico
+- [x] Modelo `UserConfig` (singleton)
+- [x] Modelo `Task`
+- [x] Modelo `WorkSession`
+- [x] Modelo `ScheduledBlock`
+- [x] Modelo `ExecutionLog`
+- [x] Modelo `AuditLog`
+- [x] Tipo custom para UUID (compatível SQLite + Postgres)
+- [x] Gerar migration com todas as tabelas + aplicar
+- [x] Criar seed inicial (config default do usuário)
+- [x] `TaskRepository` — CRUD básico
 - [ ] `ScheduleRepository` — create/read de work_sessions e blocks
 - [ ] `LogRepository` — CRUD de execution_logs
-- [ ] `ConfigRepository` — get/update do singleton
-- [ ] Testes unitários de cada repositório (usando SQLite em memória)
+- [x] `ConfigRepository` — get/update do singleton
+- [x] Testes unitários de cada repositório (usando SQLite em memória)
 
 **DoD:** todas as tabelas criadas nos dois bancos; repositórios com 100% de cobertura no happy path.
 
@@ -71,17 +71,17 @@ Meta: todas as tabelas definidas, migrations aplicadas, repositórios com testes
 
 Meta: endpoints de tarefas prontos e testados.
 
-- [ ] Schemas Pydantic: `TaskCreate`, `TaskUpdate`, `TaskRead`
-- [ ] Router `/api/tasks` com endpoints:
-  - [ ] `POST /api/tasks` — criar
-  - [ ] `GET /api/tasks` — listar (filtros: status, priority)
-  - [ ] `GET /api/tasks/{id}` — obter
-  - [ ] `PATCH /api/tasks/{id}` — atualizar
-  - [ ] `DELETE /api/tasks/{id}` — remover
-- [ ] `TaskService` — regras: validações, status transitions
-- [ ] Logging em `audit_log` para create/update/delete
-- [ ] Testes de integração dos endpoints
-- [ ] Atualizar OpenAPI com exemplos em cada endpoint
+- [x] Schemas Pydantic: `TaskCreate`, `TaskUpdate`, `TaskRead`
+- [x] Router `/api/tasks` com endpoints:
+  - [x] `POST /api/tasks` — criar
+  - [x] `GET /api/tasks` — listar (filtros: status, priority)
+  - [x] `GET /api/tasks/{id}` — obter
+  - [x] `PATCH /api/tasks/{id}` — atualizar
+  - [x] `DELETE /api/tasks/{id}` — remover
+- [x] `TaskService` — regras: validações, status transitions
+- [x] Logging em `audit_log` para create/update/delete
+- [x] Testes de integração dos endpoints
+- [x] Atualizar OpenAPI com exemplos em cada endpoint
 
 **DoD:** CRUD completo funcional via Swagger UI; todos os testes verdes.
 
