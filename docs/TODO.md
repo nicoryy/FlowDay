@@ -91,24 +91,24 @@ Meta: endpoints de tarefas prontos e testados.
 
 Meta: algoritmo de alocação funcionando, com suite de testes robusta.
 
-- [ ] `SchedulerService` — implementação do greedy
-- [ ] Schema `ScheduleRequest` (data, work_start opcional, work_end opcional — senão usa config)
-- [ ] Schema `ScheduleResponse` (work_session + blocks + overflow list)
-- [ ] Router `/api/schedule`:
-  - [ ] `POST /api/schedule` — gera plano do dia
-  - [ ] `GET /api/schedule/{date}` — recupera plano existente
-  - [ ] `DELETE /api/schedule/{date}` — limpa plano (volta tarefas para pending)
-- [ ] Suite de testes do scheduler:
-  - [ ] Todas as tarefas cabem
-  - [ ] Uma tarefa estoura → overflow
-  - [ ] Múltiplas tarefas estouram
-  - [ ] Pausas respeitadas no intervalo correto
-  - [ ] Lista vazia
-  - [ ] Janela de trabalho muito curta (< 1 tarefa)
-  - [ ] Prioridades iguais → ordena por duração asc
-  - [ ] Prioridades diferentes → prioridade manda
-  - [ ] Config snapshot persistido na work_session
-- [ ] Documentar algoritmo no docstring com exemplo
+- [x] `SchedulerService` — implementação do greedy
+- [x] Schema `ScheduleRequest` (data, work_start opcional, work_end opcional — senão usa config)
+- [x] Schema `ScheduleResponse` (work_session + blocks + overflow list)
+- [x] Router `/api/schedule`:
+  - [x] `POST /api/schedule` — gera plano do dia
+  - [x] `GET /api/schedule/{date}` — recupera plano existente
+  - [x] `DELETE /api/schedule/{date}` — limpa plano (volta tarefas para pending)
+- [x] Suite de testes do scheduler:
+  - [x] Todas as tarefas cabem
+  - [x] Uma tarefa estoura → overflow
+  - [x] Múltiplas tarefas estouram
+  - [x] Pausas respeitadas no intervalo correto
+  - [x] Lista vazia
+  - [x] Janela de trabalho muito curta (< 1 tarefa)
+  - [x] Prioridades iguais → ordena por duração asc
+  - [x] Prioridades diferentes → prioridade manda
+  - [x] Config snapshot persistido na work_session
+- [x] Documentar algoritmo no docstring com exemplo
 
 **DoD:** suite de testes do scheduler 100% verde; executar manualmente via Swagger e verificar output.
 
