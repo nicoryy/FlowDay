@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import async_session_factory
 from app.repositories.config_repository import ConfigRepository
-from app.routers import schedule, tasks
+from app.routers import config, logs, schedule, tasks
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -40,6 +40,8 @@ app.add_middleware(
 
 app.include_router(tasks.router)
 app.include_router(schedule.router)
+app.include_router(logs.router)
+app.include_router(config.router)
 
 
 @app.get("/health", tags=["system"])

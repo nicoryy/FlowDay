@@ -21,6 +21,7 @@ class ScheduledBlockRead(BaseModel):
     id: str
     task_id: str
     task_title: str
+    task_status: str
     estimated_minutes: int
     priority: int
     planned_start: datetime.datetime

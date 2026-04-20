@@ -1,27 +1,17 @@
-import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { CalendarDays, RefreshCw, Trash2, Clock } from "lucide-react";
+import { CalendarDays, RefreshCw, Trash2 } from "lucide-react";
 import { scheduleApi } from "@/api/schedule";
 import { ApiError } from "@/api/client";
+import { toast } from "@/stores/toast";
+import { Timeline, TimelineLegend } from "@/components/timeline/Timeline";
 import type { ScheduleResponse } from "@/api/types";
 
 const TODAY = new Date().toISOString().split("T")[0];
 
-const PRIORITY_COLOR = {
-  1: "bg-red-500",
-  2: "bg-yellow-500",
-  3: "bg-green-500",
-} as const;
-
-function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-}
-
 export function Dashboard() {
   const qc = useQueryClient();
-  const [apiError, setApiError] = useState<string | null>(null);
 
-  const { data: schedule, isLoading: loadingSchedule } = useQuery<ScheduleResponse | null>({
+  const { data: schedule, isLoading } = useQuery<ScheduleResponse | null>({
     queryKey: ["schedule", TODAY],
     queryFn: async () => {
       try {
@@ -31,27 +21,31 @@ export function Dashboard() {
         throw e;
       }
     },
+    refetchInterval: 30_000,
   });
 
   const generateMutation = useMutation({
     mutationFn: () => scheduleApi.generate({ date: TODAY }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["schedule", TODAY] });
+      qc.invalidateQueries({ queryKey: ["schedule"] });
       qc.invalidateQueries({ queryKey: ["tasks"] });
-      setApiError(null);
+      toast.success("Dia planejado com sucesso!");
     },
-    onError: (e) => setApiError(e instanceof ApiError ? e.message : "Erro ao gerar plano"),
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : "Erro ao gerar plano"),
   });
 
   const deleteMutation = useMutation({
     mutationFn: () => scheduleApi.delete(TODAY),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["schedule", TODAY] });
+      qc.invalidateQueries({ queryKey: ["schedule"] });
       qc.invalidateQueries({ queryKey: ["tasks"] });
-      setApiError(null);
+      toast.info("Plano removido. Tarefas voltaram para pendente.");
     },
-    onError: (e) => setApiError(e instanceof ApiError ? e.message : "Erro ao limpar plano"),
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : "Erro ao limpar plano"),
   });
+
+  const completedCount = schedule?.blocks.filter((b) => b.task_status === "done").length ?? 0;
+  const totalBlocks = schedule?.blocks.length ?? 0;
 
   return (
     <div className="space-y-6">
@@ -70,10 +64,12 @@ export function Dashboard() {
         <div className="flex gap-2">
           {schedule && (
             <button
-              onClick={() => deleteMutation.mutate()}
+              onClick={() => {
+                if (confirm("Limpar o plano de hoje? As tarefas voltarão para pendente."))
+                  deleteMutation.mutate();
+              }}
               disabled={deleteMutation.isPending}
-              className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-text-muted hover:border-error/50 hover:text-error transition-colors"
-              title="Limpar plano de hoje"
+              className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-text-muted hover:border-error/40 hover:text-error transition-colors"
             >
               <Trash2 size={14} />
               Limpar
@@ -94,86 +90,86 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* Error */}
-      {apiError && (
-        <div className="rounded-lg bg-error/10 border border-error/20 px-4 py-3 text-sm text-error">
-          {apiError}
-        </div>
-      )}
-
       {/* Loading */}
-      {loadingSchedule && (
+      {isLoading && (
         <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-16 rounded-lg bg-background-secondary animate-pulse" />
-          ))}
+          <div className="h-6 w-40 rounded bg-background-secondary animate-pulse" />
+          <div className="h-24 rounded-lg bg-background-secondary animate-pulse" />
         </div>
       )}
 
-      {/* Empty state */}
-      {!loadingSchedule && !schedule && (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-border bg-background-secondary py-20 text-center">
-          <CalendarDays size={40} className="text-text-muted mb-4" />
-          <p className="text-text-primary font-medium">Nenhum plano para hoje</p>
-          <p className="text-text-muted text-sm mt-1">
-            Crie suas tarefas e clique em "Planejar dia"
-          </p>
+      {/* Empty */}
+      {!isLoading && !schedule && (
+        <div className="flex flex-col items-center justify-center rounded-lg border border-border bg-background-secondary py-20 text-center gap-3">
+          <CalendarDays size={40} className="text-text-muted" />
+          <div>
+            <p className="text-text-primary font-medium">Nenhum plano para hoje</p>
+            <p className="text-text-muted text-sm mt-1">
+              Crie suas tarefas e clique em "Planejar dia"
+            </p>
+          </div>
         </div>
       )}
 
-      {/* Timeline */}
+      {/* Schedule */}
       {schedule && (
         <div className="space-y-4">
-          <div className="flex items-center gap-3 text-xs text-text-muted font-mono">
-            <Clock size={12} />
-            <span>{schedule.work_start} → {schedule.work_end}</span>
-            <span>·</span>
-            <span>{schedule.blocks.length} bloco{schedule.blocks.length !== 1 ? "s" : ""}</span>
+          {/* Stats bar */}
+          <div className="flex items-center gap-4 text-sm">
+            <span className="text-text-muted font-mono text-xs">
+              {schedule.work_start.slice(0, 5)} → {schedule.work_end.slice(0, 5)}
+            </span>
+            <span className="text-text-muted">·</span>
+            <span className="text-text-secondary">
+              <span className="font-mono text-purple-accent">{completedCount}</span>
+              <span className="text-text-muted">/{totalBlocks} concluídas</span>
+            </span>
             {schedule.overflow.length > 0 && (
               <>
-                <span>·</span>
-                <span className="text-orange-400">{schedule.overflow.length} overflow</span>
+                <span className="text-text-muted">·</span>
+                <span className="text-orange-400 text-xs">
+                  {schedule.overflow.length} em overflow
+                </span>
               </>
             )}
           </div>
 
-          {/* Blocks */}
-          <div className="space-y-2">
-            {schedule.blocks.map((block) => (
+          {/* Progress bar */}
+          {totalBlocks > 0 && (
+            <div className="h-1 w-full rounded-full bg-background-tertiary overflow-hidden">
               <div
-                key={block.id}
-                className="flex items-center gap-4 rounded-lg border border-border bg-background-secondary px-4 py-3"
-              >
-                <div
-                  className={`h-10 w-1 rounded-full flex-shrink-0 ${
-                    PRIORITY_COLOR[block.priority as 1 | 2 | 3] ?? "bg-zinc-500"
-                  }`}
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-text-primary truncate">{block.task_title}</p>
-                  <p className="text-xs text-text-muted font-mono mt-0.5">
-                    {formatTime(block.planned_start)} → {formatTime(block.planned_end)}
-                  </p>
-                </div>
-                <div className="text-xs text-text-muted font-mono flex-shrink-0">
-                  {block.estimated_minutes}m
-                </div>
-              </div>
-            ))}
+                className="h-full rounded-full bg-purple-primary transition-all duration-500"
+                style={{ width: `${(completedCount / totalBlocks) * 100}%` }}
+              />
+            </div>
+          )}
+
+          {/* Timeline SVG */}
+          <div className="rounded-lg border border-border bg-background-secondary p-4 space-y-3">
+            {schedule.blocks.length === 0 ? (
+              <p className="text-text-muted text-sm text-center py-6">
+                Nenhuma tarefa pendente foi alocada.
+              </p>
+            ) : (
+              <>
+                <Timeline schedule={schedule} />
+                <TimelineLegend />
+              </>
+            )}
           </div>
 
           {/* Overflow */}
           {schedule.overflow.length > 0 && (
-            <div className="rounded-lg border border-orange-500/20 bg-orange-500/5 p-4">
-              <p className="text-xs font-medium text-orange-400 mb-2 uppercase tracking-wide">
-                Tarefas em overflow — não couberam hoje
+            <div className="rounded-lg border border-orange-500/20 bg-orange-500/5 p-4 space-y-2">
+              <p className="text-xs font-medium text-orange-400 uppercase tracking-wide">
+                Overflow — não couberam hoje
               </p>
               <div className="space-y-1">
-                {schedule.overflow.map((task) => (
-                  <div key={task.id} className="flex items-center gap-2 text-sm text-text-secondary">
-                    <span className="text-orange-400">·</span>
-                    <span>{task.title}</span>
-                    <span className="font-mono text-xs text-text-muted">{task.estimated_minutes}m</span>
+                {schedule.overflow.map((t) => (
+                  <div key={t.id} className="flex items-center gap-2 text-sm text-text-secondary">
+                    <span className="text-orange-400/60">·</span>
+                    <span>{t.title}</span>
+                    <span className="font-mono text-xs text-text-muted">{t.estimated_minutes}m</span>
                   </div>
                 ))}
               </div>

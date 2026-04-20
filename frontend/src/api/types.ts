@@ -36,6 +36,7 @@ export interface ScheduledBlock {
   id: string;
   task_id: string;
   task_title: string;
+  task_status: TaskStatus;
   estimated_minutes: number;
   priority: number;
   planned_start: string;
@@ -56,4 +57,46 @@ export interface ScheduleRequest {
   date: string;
   work_start?: string;
   work_end?: string;
+}
+
+export interface ExecutionLog {
+  id: string;
+  task_id: string;
+  work_session_id: string | null;
+  actual_start: string | null;
+  actual_end: string | null;
+  completed: boolean;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface ExecutionLogCreate {
+  task_id: string;
+  work_session_id?: string | null;
+  actual_start?: string | null;
+}
+
+export interface ExecutionLogUpdate {
+  actual_end?: string | null;
+  completed?: boolean;
+  notes?: string | null;
+}
+
+export interface UserConfig {
+  id: number;
+  default_work_start: string;
+  default_work_end: string;
+  break_duration_min: number;
+  break_interval_min: number;
+  timezone: string;
+  notifications_enabled: boolean;
+}
+
+export interface UserConfigUpdate {
+  default_work_start?: string;
+  default_work_end?: string;
+  break_duration_min?: number;
+  break_interval_min?: number;
+  timezone?: string;
+  notifications_enabled?: boolean;
 }

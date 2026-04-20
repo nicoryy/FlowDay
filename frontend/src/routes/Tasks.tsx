@@ -6,6 +6,7 @@ import type { Task, TaskCreate, TaskUpdate } from "@/api/types";
 import { TaskCard } from "@/components/tasks/TaskCard";
 import { TaskFormModal } from "@/components/tasks/TaskFormModal";
 import { ApiError } from "@/api/client";
+import { toast } from "@/stores/toast";
 
 const STATUS_LABELS: Record<string, string> = {
   pending: "Pendente",
@@ -34,8 +35,13 @@ export function Tasks() {
       qc.invalidateQueries({ queryKey: ["tasks"] });
       setModalOpen(false);
       setError(null);
+      toast.success("Tarefa criada!");
     },
-    onError: (e) => setError(e instanceof ApiError ? e.message : "Erro ao criar tarefa"),
+    onError: (e) => {
+      const msg = e instanceof ApiError ? e.message : "Erro ao criar tarefa";
+      setError(msg);
+      toast.error(msg);
+    },
   });
 
   const updateMutation = useMutation({
@@ -45,13 +51,22 @@ export function Tasks() {
       qc.invalidateQueries({ queryKey: ["tasks"] });
       setEditing(null);
       setError(null);
+      toast.success("Tarefa atualizada!");
     },
-    onError: (e) => setError(e instanceof ApiError ? e.message : "Erro ao atualizar tarefa"),
+    onError: (e) => {
+      const msg = e instanceof ApiError ? e.message : "Erro ao atualizar tarefa";
+      setError(msg);
+      toast.error(msg);
+    },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => tasksApi.delete(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["tasks"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+      toast.info("Tarefa removida.");
+    },
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : "Erro ao remover tarefa"),
   });
 
   const handleSubmit = (values: TaskCreate) => {

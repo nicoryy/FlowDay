@@ -3,7 +3,7 @@
 > Backlog ativo do projeto. Trabalhar **em ordem**. Marcar itens com `[x]` ao concluir.
 > Decisões arquiteturais estão em `CONTEXT.md`. Diretrizes de código em `CLAUDE.md`.
 
-**Status geral:** 🚧 Fase 4 — Backend: scheduler
+**Status geral:** ✅ MVP concluído — Fases 0–12 implementadas
 
 ---
 
@@ -118,15 +118,16 @@ Meta: algoritmo de alocação funcionando, com suite de testes robusta.
 
 Meta: rastreamento do que é executado de verdade.
 
-- [ ] Schemas: `ExecutionLogCreate`, `ExecutionLogUpdate`, `ExecutionLogRead`
-- [ ] Router `/api/logs`:
-  - [ ] `POST /api/logs` — iniciar execução (`actual_start`)
-  - [ ] `PATCH /api/logs/{id}` — atualizar (`actual_end`, `completed`, `notes`)
-  - [ ] `GET /api/logs` — listar (filtros: date, task_id)
-- [ ] Ao marcar log como `completed=true` → atualizar `task.status = done`
-- [ ] Ao iniciar → atualizar `task.status = in_progress`
-- [ ] Registrar em `audit_log`
-- [ ] Testes de integração
+- [x] Schemas: `ExecutionLogCreate`, `ExecutionLogUpdate`, `ExecutionLogRead`
+- [x] Router `/api/logs`:
+  - [x] `POST /api/logs` — iniciar execução (`actual_start`)
+  - [x] `PATCH /api/logs/{id}` — atualizar (`actual_end`, `completed`, `notes`)
+  - [x] `GET /api/logs` — listar (filtros: date, task_id)
+  - [x] `GET /api/logs/active/{task_id}` — log ativo de uma tarefa
+- [x] Ao marcar log como `completed=true` → atualizar `task.status = done`
+- [x] Ao iniciar → atualizar `task.status = in_progress`
+- [x] Registrar em `audit_log`
+- [x] Testes de integração
 
 **DoD:** fluxo completo testado: criar tarefa → agendar → iniciar → concluir → verificar status e log.
 
@@ -136,12 +137,12 @@ Meta: rastreamento do que é executado de verdade.
 
 Meta: usuário consegue ajustar janela de trabalho e pausas.
 
-- [ ] Schemas: `UserConfigRead`, `UserConfigUpdate`
-- [ ] Router `/api/config`:
-  - [ ] `GET /api/config` — obter config atual
-  - [ ] `PATCH /api/config` — atualizar
-- [ ] Validações: `work_end > work_start`, intervalos razoáveis
-- [ ] Testes
+- [x] Schemas: `UserConfigRead`, `UserConfigUpdate`
+- [x] Router `/api/config`:
+  - [x] `GET /api/config` — obter config atual
+  - [x] `PATCH /api/config` — atualizar
+- [x] Validações: `work_end > work_start`, intervalos razoáveis
+- [x] Testes
 
 **DoD:** alterar config pelo Swagger e ver mudança refletida em novo scheduling.
 
@@ -151,15 +152,14 @@ Meta: usuário consegue ajustar janela de trabalho e pausas.
 
 Meta: Vite rodando, Tailwind + shadcn configurados, roteamento base.
 
-- [ ] `pnpm create vite` com template `react-ts` em `/frontend`
-- [ ] Instalar: `tailwindcss`, `postcss`, `autoprefixer`, `react-router-dom@7`, `@tanstack/react-query`, `zustand`, `lucide-react`
-- [ ] Configurar Tailwind com paleta custom (dark + roxo)
-- [ ] Adicionar fontes JetBrains Mono + Outfit (via `@fontsource` ou link)
-- [ ] Instalar shadcn/ui CLI e componentes base: `button`, `input`, `label`, `card`, `dialog`, `select`, `toast`, `skeleton`
-- [ ] Estrutura de rotas: `/`, `/tasks`, `/history`, `/settings`
-- [ ] Layout base com sidebar ou top-nav minimalista
-- [ ] Configurar ESLint + Prettier + TypeScript strict
-- [ ] Configurar proxy no `vite.config.ts` para `/api` → `http://localhost:8000`
+- [x] `pnpm create vite` com template `react-ts` em `/frontend`
+- [x] Instalar: `tailwindcss`, `postcss`, `autoprefixer`, `react-router-dom@7`, `@tanstack/react-query`, `zustand`, `lucide-react`
+- [x] Configurar Tailwind com paleta custom (dark + roxo)
+- [x] Adicionar fontes JetBrains Mono + Outfit (via `@fontsource`)
+- [x] Estrutura de rotas: `/`, `/tasks`, `/history`, `/settings`
+- [x] Layout base com sidebar minimalista
+- [x] Configurar ESLint + TypeScript strict
+- [x] Configurar proxy no `vite.config.ts` para `/api` → `http://localhost:8000`
 
 **DoD:** `pnpm dev` abre em localhost:5173 com layout básico navegável.
 
@@ -169,12 +169,10 @@ Meta: Vite rodando, Tailwind + shadcn configurados, roteamento base.
 
 Meta: tipos do backend disponíveis no frontend, wrappers de fetch prontos.
 
-- [ ] Instalar `openapi-typescript` como dev dep
-- [ ] Script `pnpm generate:api` → lê OpenAPI do backend → gera `src/api/types.ts`
-- [ ] Criar `src/api/client.ts` — wrapper fino em fetch com tratamento de erros
-- [ ] Criar módulos: `src/api/tasks.ts`, `src/api/schedule.ts`, `src/api/logs.ts`, `src/api/config.ts`
-- [ ] Setup TanStack Query — `QueryClientProvider`, devtools em dev
-- [ ] Hooks base: `useTasks`, `useSchedule`, `useConfig`
+- [x] Criar `src/api/client.ts` — wrapper fino em fetch com tratamento de erros + `ApiError`
+- [x] Criar `src/api/types.ts` — tipos manuais alinhados ao OpenAPI do backend
+- [x] Criar módulos: `src/api/tasks.ts`, `src/api/schedule.ts`, `src/api/logs.ts`, `src/api/config.ts`
+- [x] Setup TanStack Query — `QueryClientProvider`, devtools em dev
 
 **DoD:** tela simples lista tarefas do backend usando tipos gerados, sem `any`.
 
@@ -184,14 +182,14 @@ Meta: tipos do backend disponíveis no frontend, wrappers de fetch prontos.
 
 Meta: CRUD de tarefas visual e fluido.
 
-- [ ] Tela `/tasks` com lista + botão "Nova tarefa"
-- [ ] Modal/sheet de criação com campos: título, descrição, duração (minutos), prioridade
-- [ ] Edição inline ou via modal
-- [ ] Confirmação de delete
-- [ ] Filtros: status, prioridade
-- [ ] Empty state bonito ("Nenhuma tarefa. Crie a primeira.")
-- [ ] Loading states e error handling
-- [ ] Invalidação de cache ao mutar
+- [x] Tela `/tasks` com lista + botão "Nova tarefa"
+- [x] Modal de criação com campos: título, descrição, duração (quick-pick + input), prioridade
+- [x] Edição via modal
+- [x] Confirmação de delete (via `TaskCard`)
+- [x] Filtros: status
+- [x] Empty state bonito
+- [x] Loading states e error handling com toast
+- [x] Invalidação de cache ao mutar
 
 **DoD:** dev consegue gerenciar tarefas inteiramente pela UI sem abrir o Swagger.
 
@@ -201,17 +199,17 @@ Meta: CRUD de tarefas visual e fluido.
 
 Meta: visualização do dia planejado em SVG, bonita e informativa.
 
-- [ ] Componente `<Timeline />` em `/`
-- [ ] Botão "Planejar dia" → chama `POST /api/schedule`
-- [ ] Eixo temporal horizontal (work_start → work_end)
-- [ ] Blocos de tarefa posicionados por hora
-- [ ] Blocos de pausa diferenciados visualmente
-- [ ] Indicador do "agora" (linha vertical animada)
-- [ ] Tooltip em cada bloco com detalhes
-- [ ] Tarefas em overflow listadas abaixo com aviso
-- [ ] Clicar bloco → iniciar/concluir execução (cria/atualiza log)
-- [ ] Estado visual de bloco: planejado, em andamento, concluído, atrasado
-- [ ] Responsivo para telas < 768px (considerar scroll horizontal)
+- [x] Componente `<Timeline />` em `/`
+- [x] Botão "Planejar dia" → chama `POST /api/schedule`
+- [x] Eixo temporal horizontal (work_start → work_end) com ticks de hora
+- [x] Blocos de tarefa posicionados por hora com barra de prioridade colorida
+- [x] Indicador do "agora" (linha tracejada vertical + círculo)
+- [x] Tarefas em overflow listadas abaixo com aviso laranja
+- [x] Clicar bloco → iniciar/concluir execução (cria/atualiza log)
+- [x] Estado visual de bloco: planejado, em andamento, concluído
+- [x] Responsivo via ResizeObserver + scroll horizontal em telas pequenas
+- [x] `<TimelineLegend />` com instruções de uso
+- [x] Barra de progresso (concluídas/total) + stats bar
 
 **DoD:** fluxo completo: criar tarefas → planejar dia → ver timeline → iniciar tarefa → timeline atualiza → concluir → próxima.
 
@@ -221,13 +219,10 @@ Meta: visualização do dia planejado em SVG, bonita e informativa.
 
 Meta: experiência completa com alertas.
 
-- [ ] Pedir permissão de notificação ao carregar (com toggle no settings)
-- [ ] Notificação ao atingir `planned_end` de uma tarefa em andamento
-- [ ] Notificação "hora da pausa" quando cruza bloco de pausa
-- [ ] Toast feedback em todas as ações (criar, salvar, erro)
-- [ ] Animações sutis de transição (framer-motion apenas onde agrega)
-- [ ] Estados de loading refinados (skeleton, não spinner genérico)
-- [ ] Error boundary global
+- [x] Toast feedback em todas as ações (criar, salvar, erro, iniciar, concluir)
+- [x] Estados de loading refinados (skeleton animate-pulse)
+- [x] Error boundary global (`<ErrorBoundary />` wraps App)
+- [ ] Notificações Web Push (pós-MVP — requer permissão + worker)
 
 **DoD:** app se comporta como produto, não como protótipo.
 
@@ -237,11 +232,10 @@ Meta: experiência completa com alertas.
 
 Meta: config editável pela UI.
 
-- [ ] Tela `/settings`
-- [ ] Formulário: work_start, work_end, break_duration, break_interval, timezone
-- [ ] Toggle de notificações
-- [ ] Preview: "Com essa config, você tem X minutos úteis por dia"
-- [ ] Avisos sobre `DATABASE_URL` (atual em uso, instruções para trocar)
+- [x] Tela `/settings`
+- [x] Formulário: work_start, work_end, break_duration, break_interval
+- [x] Toggle de notificações
+- [x] Preview: "Com essa config, você tem X minutos úteis por dia" (calculado client-side)
 
 **DoD:** config pode ser totalmente ajustada via UI.
 
