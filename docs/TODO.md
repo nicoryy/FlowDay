@@ -3,7 +3,7 @@
 > Backlog ativo do projeto. Trabalhar **em ordem**. Marcar itens com `[x]` ao concluir.
 > Decisões arquiteturais estão em `CONTEXT.md`. Diretrizes de código em `CLAUDE.md`.
 
-**Status geral:** ✅ MVP concluído — Fases 0–12 implementadas
+**Status geral:** ✅ MVP concluído — Fases 0–14 implementadas. Fases 15–17 planejadas (produto). Infra (18–19) e Auth (20) adiados por decisão do dev.
 
 ---
 
@@ -58,8 +58,8 @@ Meta: todas as tabelas definidas, migrations aplicadas, repositórios com testes
 - [x] Gerar migration com todas as tabelas + aplicar
 - [x] Criar seed inicial (config default do usuário)
 - [x] `TaskRepository` — CRUD básico
-- [ ] `ScheduleRepository` — create/read de work_sessions e blocks
-- [ ] `LogRepository` — CRUD de execution_logs
+- [x] `ScheduleRepository` — create/read de work_sessions e blocks
+- [x] `LogRepository` — CRUD de execution_logs + `get_last_for_task()` + `revert()`
 - [x] `ConfigRepository` — get/update do singleton
 - [x] Testes unitários de cada repositório (usando SQLite em memória)
 
@@ -128,6 +128,8 @@ Meta: rastreamento do que é executado de verdade.
 - [x] Ao iniciar → atualizar `task.status = in_progress`
 - [x] Registrar em `audit_log`
 - [x] Testes de integração
+- [x] `POST /api/logs/revert/{task_id}` — reverte tarefa para pending, marca log como `abandoned=true`
+- [x] Coluna `abandoned: bool` em `execution_logs` (migration `a3f8c2e91b47`)
 
 **DoD:** fluxo completo testado: criar tarefa → agendar → iniciar → concluir → verificar status e log.
 
@@ -210,6 +212,12 @@ Meta: visualização do dia planejado em SVG, bonita e informativa.
 - [x] Responsivo via ResizeObserver + scroll horizontal em telas pequenas
 - [x] `<TimelineLegend />` com instruções de uso
 - [x] Barra de progresso (concluídas/total) + stats bar
+- [x] Correção de timezone: timestamps sem tzinfo tratados como fake-UTC; `parseISO()` + `field_serializer` no backend
+- [x] Filtro de ticks do eixo próximos ao start/end (guard de 25min) — evita sobreposição de labels
+- [x] Indicador "Agora" com fórmula correta: `Date.now() - getTimezoneOffset()*60000`
+- [x] Hover com expansão inline (HTML overlay sobre SVG) — `ease-in-out` 200ms abertura e fechamento simétrico
+- [x] Largura do hover calculada via `scrollWidth` do conteúdo real (+10px)
+- [x] Anti-flicker: `pointerEvents: none` no bloco SVG quando hover ativo; estados `hoveredId`/`overlayInfo` separados
 
 **DoD:** fluxo completo: criar tarefas → planejar dia → ver timeline → iniciar tarefa → timeline atualiza → concluir → próxima.
 
@@ -241,39 +249,96 @@ Meta: config editável pela UI.
 
 ---
 
-## 📊 Fase 13 — Estatísticas (pós-MVP inicial)
+## 📊 Fase 13 — Estatísticas (pós-MVP inicial) ✅ 2026-04-21
 
 Meta: dashboard básico de histórico.
 
-- [ ] Backend: `StatsService` e `/api/stats`
-  - [ ] Taxa de conclusão por período
-  - [ ] Desvio médio (estimado vs real)
-  - [ ] Tarefas por prioridade executadas
-  - [ ] Tempo total registrado por dia
-- [ ] Frontend: tela `/history`
-  - [ ] Lista cronológica de work_sessions
-  - [ ] Cards de métricas principais
-  - [ ] Gráfico simples (linha ou barras) — considerar `recharts`
+- [x] Backend: `StatsService` e `/api/stats?period=week|day&date=YYYY-MM-DD`
+  - [x] Taxa de conclusão por período
+  - [x] Desvio médio (estimado vs real)
+  - [x] Tarefas por prioridade executadas + abandonadas
+  - [x] Tempo total registrado por dia
+- [x] Frontend: tela `/history`
+  - [x] Toggle "Hoje" / "Semana"
+  - [x] Cards de métricas: concluídas, abandonadas (vermelho), tempo, desvio
+  - [x] Gráficos SVG puros: `CompletionChart` (barras) + `LoggedMinutesChart` (polilinha)
+  - [x] `PriorityBreakdown` com barras por prioridade
 - [ ] Sugestão automática: "Você estima tarefas com -20% de precisão"
 
 **DoD:** dev consegue responder "como foi minha semana?" em 1 clique.
 
 ---
 
-## 🎨 Fase 14 — Visualização Kanban (pós-MVP)
+## 🎨 Fase 14 — Visualização Kanban (pós-MVP) ✅ 2026-04-21
 
 Meta: segunda view, mesma data.
 
-- [ ] Toggle timeline/kanban na tela principal
-- [ ] Colunas: A Fazer, Em Andamento, Concluído, Overflow
-- [ ] Drag-and-drop entre colunas (considerar `dnd-kit`)
-- [ ] Ações coerentes com backend
+- [x] Toggle timeline/kanban na tela principal (ícones lucide)
+- [x] Colunas: A Fazer, Em Andamento, Concluído, Overflow
+- [x] Drag-and-drop via `@dnd-kit/core` (PointerSensor + distância 8px)
+- [x] Transições forward (todo→in_progress→done) e backward (qualquer→todo com revert)
+- [x] Backward drag = abandono registrado como estatística negativa
+- [x] Cards com barra de prioridade colorida + estado visual
 
 **DoD:** as duas views compartilham dados e ações, sem duplicação de estado.
 
 ---
 
-## 🐋 Fase 15 — Containerização
+## 🔁 Fase 15 — Tarefas Recorrentes
+
+Meta: usuário pode criar tarefas que repetem automaticamente (diário, semanal, dias específicos).
+
+- [ ] Backend: adicionar campo `recurrence_rule` em `Task` (RRULE simplificado: `daily` / `weekly` / `weekdays` + `interval`)
+- [ ] Migration Alembic para o novo campo `recurrence_rule`
+- [ ] `RecurrenceService` — expande regras em instâncias concretas para a data requisitada
+- [ ] `SchedulerService` integra instâncias recorrentes junto às tarefas únicas ao gerar o plano
+- [ ] Schemas Pydantic atualizados: `TaskCreate`, `TaskRead` com campo opcional `recurrence_rule`
+- [ ] Testes de `RecurrenceService`: diária, semanal, weekdays, interval > 1, sem recorrência
+- [ ] Frontend: toggle de recorrência no modal de criação/edição de tarefa
+- [ ] Frontend: seleção de tipo (diário / semanal / dias da semana) com opções condicionais
+- [ ] Frontend: indicador visual nas task cards para tarefas recorrentes (ícone `lucide-react`)
+- [ ] Frontend: indicador visual na timeline nos blocos recorrentes
+
+**DoD:** criar uma tarefa recorrente diária → planejar o dia → instância aparece na timeline; editar a regra → plano regenerado reflete a mudança.
+
+---
+
+## 📦 Fase 16 — Histórico Reagendável
+
+Meta: tarefas não concluídas do dia anterior podem ser transferidas para o próximo dia com 1 clique.
+
+- [ ] Backend: `POST /api/schedule/rollover?from_date=YYYY-MM-DD&to_date=YYYY-MM-DD`
+- [ ] Lógica de rollover: só move tarefas com status `pending` ou `overflow` e sem log de conclusão; cria novo `ScheduledBlock` na data destino
+- [ ] Schemas: `RolloverRequest`, `RolloverResponse` (lista de tarefas movidas + ignoradas)
+- [ ] Registrar operação em `audit_log`
+- [ ] Testes: rollover com tarefas mistas (pendentes + concluídas + recorrentes), data destino sem plano, data destino com plano existente
+- [ ] Frontend: banner no Dashboard quando há tarefas não concluídas do dia anterior
+- [ ] Frontend: botão "Reagendar para hoje" no banner com modal de confirmação listando as tarefas afetadas
+- [ ] Frontend: tela `/history` exibe tarefas reagendadas com badge visual diferenciado
+- [ ] Frontend: invalidar cache do schedule após rollover
+
+**DoD:** ao abrir o app com tarefas de ontem não concluídas → banner aparece → confirmar → tarefas aparecem no plano de hoje.
+
+---
+
+## 📈 Fase 17 — Ajuste Automático de Estimativas
+
+Meta: o sistema sugere correções nas durações estimadas com base no histórico real de execução.
+
+- [ ] Backend: `StatsService.get_estimation_bias(task_id: UUID | None)` — calcula desvio médio por tarefa e global
+- [ ] Algoritmo: média ponderada recente sobre `(estimated_duration - actual_duration)` dos `ExecutionLog` com `completed=true`; peso maior para execuções mais recentes
+- [ ] Backend: `GET /api/stats/estimation-report` — retorna `{ global_bias_min, tasks: [{ task_id, title, bias_min, sample_count }] }`
+- [ ] Testes de `StatsService`: bias positivo, negativo, zero, tarefa com 1 amostra (sem sugestão), sem dados
+- [ ] Frontend: card "Precisão de Estimativas" na tela `/history` com bias global formatado (ex: `+12min em média`)
+- [ ] Frontend: lista de tarefas sub/superestimadas com mais de 3 amostras, ordenadas por bias absoluto
+- [ ] Frontend: no modal de edição de tarefa, exibir linha "Histórico sugere Xmin" quando `sample_count >= 3`
+- [ ] Frontend: sugestão clicável — ao clicar, preenche o campo de duração com o valor sugerido
+
+**DoD:** executar a mesma tarefa 3+ vezes com duração real diferente da estimada → abrir modal de edição → sugestão aparece com valor correto.
+
+---
+
+## 🐋 Fase 18 — Containerização ⛔ adiada (infra não é prioridade no momento)
 
 Meta: `docker-compose up` sobe tudo.
 
@@ -289,7 +354,7 @@ Meta: `docker-compose up` sobe tudo.
 
 ---
 
-## 🚀 Fase 16 — Deploy VPS
+## 🚀 Fase 19 — Deploy VPS
 
 Meta: versão pública no VPS do dev.
 
@@ -304,7 +369,7 @@ Meta: versão pública no VPS do dev.
 
 ---
 
-## 🔐 Fase 17 — Autenticação (quando decidir comercializar)
+## 🔐 Fase 20 — Autenticação (quando decidir comercializar)
 
 Meta: multi-usuário, login seguro.
 
@@ -319,17 +384,28 @@ Meta: multi-usuário, login seguro.
 
 ---
 
-## 🧊 Ideias geladas (parking lot)
+## 🏗️ Bloco: Infraestrutura (quando decidir subir para produção)
+
+- Fase 18 — Containerização (Docker)
+- Fase 19 — Deploy VPS
+
+---
+
+## 🔐 Bloco: Produto Comercial
+
+- Fase 20 — Autenticação multi-usuário
+
+---
+
+## 🧊 Parking lot (sem prazo)
 
 - Integração Google Calendar (import/export)
-- Tarefas recorrentes
 - PWA / modo offline completo com sync
 - Atalhos de teclado globais
 - Tema claro (por enquanto só dark)
 - Export CSV/JSON
 - API pública para integrações (n8n, Zapier)
 - CLI companion (`flowday task add "..."`)
-- Ajuste automático de estimativas com ML simples (regressão linear no histórico)
 - Modo "foco" — tela cheia com só a tarefa atual e timer
 - Integração com MCP para Claude trabalhar com seu próprio scheduler
 
@@ -337,7 +413,14 @@ Meta: multi-usuário, login seguro.
 
 ## 🔥 Bugs conhecidos
 
-_(vazio — adicionar conforme surgirem)_
+_(vazio — todos os bugs conhecidos foram resolvidos até 2026-04-21)_
+
+**Resolvidos recentemente:**
+- ✅ Timeline: blocos aparecendo ~3h tarde (SQLite strips tzinfo → parseISO sem Z)
+- ✅ Timeline: labels de hora sobrepostos ao start/end da jornada
+- ✅ Timeline: indicador "Agora" com offset +6h (sinal errado na fórmula de timezone)
+- ✅ Timeline hover: flicker (SVG onMouseLeave conflitando com overlay HTML)
+- ✅ Timeline hover: animação de fechamento instantânea (agora simétrica com onTransitionEnd)
 
 ---
 
