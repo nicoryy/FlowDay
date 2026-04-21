@@ -586,7 +586,7 @@ export function Timeline({ schedule }: TimelineProps) {
 
 export function TimelineLegend() {
   return (
-    <div className="flex items-center gap-4 text-xs text-text-muted">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-text-muted">
       <div className="flex items-center gap-1.5">
         <Play size={10} />
         <span>Clique para iniciar</span>

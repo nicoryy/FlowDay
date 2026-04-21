@@ -5,6 +5,9 @@ const config: Config = {
   darkMode: "class",
   theme: {
     extend: {
+      screens: {
+        xs: "480px",
+      },
       colors: {
         background: {
           DEFAULT: "#0a0a0a",

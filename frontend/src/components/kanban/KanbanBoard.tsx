@@ -158,9 +158,9 @@ export function KanbanBoard({ sessionId }: KanbanBoardProps) {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-4 gap-3">
+      <div className="flex gap-3 overflow-x-auto pb-2">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-48 rounded-lg bg-background-secondary animate-pulse" />
+          <div key={i} className="h-48 min-w-[220px] flex-shrink-0 rounded-lg bg-background-secondary animate-pulse" />
         ))}
       </div>
     );
@@ -168,16 +168,19 @@ export function KanbanBoard({ sessionId }: KanbanBoardProps) {
 
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      {/* Em mobile: scroll horizontal com colunas de largura mínima fixa.
+          Em sm+: grid de 4 colunas igualadas. */}
+      <div className="flex gap-3 overflow-x-auto pb-2 sm:grid sm:grid-cols-4 sm:overflow-visible sm:pb-0">
         {COLUMNS.map((col) => (
-          <KanbanColumn
-            key={col.id}
-            id={col.id}
-            title={col.title}
-            tasks={grouped[col.id]}
-            accentColor={col.color}
-            emptyLabel={col.emptyLabel}
-          />
+          <div key={col.id} className="min-w-[220px] flex-shrink-0 sm:min-w-0">
+            <KanbanColumn
+              id={col.id}
+              title={col.title}
+              tasks={grouped[col.id]}
+              accentColor={col.color}
+              emptyLabel={col.emptyLabel}
+            />
+          </div>
         ))}
       </div>
     </DndContext>

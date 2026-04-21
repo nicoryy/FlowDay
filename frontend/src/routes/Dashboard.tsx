@@ -51,11 +51,11 @@ export function Dashboard() {
   const totalBlocks = schedule?.blocks.length ?? 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-semibold text-text-primary">Dashboard</h2>
+          <h2 className="text-xl sm:text-2xl font-semibold text-text-primary">Dashboard</h2>
           <p className="text-text-secondary mt-1 text-sm font-mono">
             {new Date().toLocaleDateString("pt-BR", {
               weekday: "long",
@@ -64,14 +64,14 @@ export function Dashboard() {
             })}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           {/* View mode toggle */}
           <button
             onClick={() => setViewMode((v) => (v === "timeline" ? "kanban" : "timeline"))}
             className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm text-text-muted hover:text-text-secondary transition-colors"
           >
             {viewMode === "timeline" ? <Kanban size={14} /> : <LayoutList size={14} />}
-            {viewMode === "timeline" ? "Kanban" : "Timeline"}
+            <span className="hidden xs:inline">{viewMode === "timeline" ? "Kanban" : "Timeline"}</span>
           </button>
 
           {schedule && (
@@ -84,20 +84,20 @@ export function Dashboard() {
               className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-text-muted hover:border-error/40 hover:text-error transition-colors"
             >
               <Trash2 size={14} />
-              Limpar
+              <span className="hidden sm:inline">Limpar</span>
             </button>
           )}
           <button
             onClick={() => generateMutation.mutate()}
             disabled={generateMutation.isPending || !!schedule}
-            className="flex items-center gap-2 rounded-lg bg-purple-primary px-4 py-2 text-sm font-medium text-white hover:bg-purple-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-2 rounded-lg bg-purple-primary px-3 sm:px-4 py-2 text-sm font-medium text-white hover:bg-purple-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {generateMutation.isPending ? (
               <RefreshCw size={14} className="animate-spin" />
             ) : (
               <CalendarDays size={14} />
             )}
-            {schedule ? "Dia planejado" : "Planejar dia"}
+            <span className="hidden sm:inline">{schedule ? "Dia planejado" : "Planejar dia"}</span>
           </button>
         </div>
       </div>
@@ -127,7 +127,7 @@ export function Dashboard() {
       {schedule && (
         <div className="space-y-4">
           {/* Stats bar */}
-          <div className="flex items-center gap-4 text-sm">
+          <div className="flex items-center flex-wrap gap-x-4 gap-y-1 text-sm">
             <span className="text-text-muted font-mono text-xs">
               {schedule.work_start.slice(0, 5)} → {schedule.work_end.slice(0, 5)}
             </span>
@@ -158,7 +158,7 @@ export function Dashboard() {
 
           {/* Timeline / Kanban */}
           {viewMode === "timeline" ? (
-            <div className="rounded-lg border border-border bg-background-secondary p-4 space-y-3">
+            <div className="rounded-lg border border-border bg-background-secondary p-2 sm:p-4 space-y-3">
               {schedule.blocks.length === 0 ? (
                 <p className="text-text-muted text-sm text-center py-6">
                   Nenhuma tarefa pendente foi alocada.

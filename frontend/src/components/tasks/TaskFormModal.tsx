@@ -52,14 +52,19 @@ export function TaskFormModal({ open, task, error, loading, onClose, onSubmit }:
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Dialog */}
-      <div className="relative z-10 w-full max-w-md mx-4 rounded-xl border border-border bg-background-secondary shadow-2xl">
+      {/* Dialog — em mobile ocupa a parte de baixo da tela (sheet), em sm+ é modal central */}
+      <div className="relative z-10 w-full sm:max-w-md sm:mx-4 rounded-t-2xl sm:rounded-xl border border-border bg-background-secondary shadow-2xl max-h-[92vh] overflow-y-auto">
+        {/* Handle visual para mobile */}
+        <div className="flex justify-center pt-3 pb-1 sm:hidden">
+          <div className="h-1 w-10 rounded-full bg-border" />
+        </div>
+
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-border px-6 py-4">
+        <div className="flex items-center justify-between border-b border-border px-4 sm:px-6 py-3 sm:py-4">
           <h2 className="font-semibold text-text-primary">
             {task ? "Editar tarefa" : "Nova tarefa"}
           </h2>
@@ -72,7 +77,7 @@ export function TaskFormModal({ open, task, error, loading, onClose, onSubmit }:
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4">
           {/* Title */}
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-text-secondary uppercase tracking-wide">
@@ -107,7 +112,7 @@ export function TaskFormModal({ open, task, error, loading, onClose, onSubmit }:
             <label className="text-xs font-medium text-text-secondary uppercase tracking-wide">
               Duração estimada (minutos) *
             </label>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2">
               <input
                 type="number"
                 value={minutes}
@@ -115,15 +120,15 @@ export function TaskFormModal({ open, task, error, loading, onClose, onSubmit }:
                 min={1}
                 max={480}
                 required
-                className="w-28 rounded-lg border border-border bg-background px-3 py-2 text-sm font-mono text-text-primary focus:border-purple-primary focus:outline-none focus:ring-1 focus:ring-purple-primary"
+                className="w-24 rounded-lg border border-border bg-background px-3 py-2 text-sm font-mono text-text-primary focus:border-purple-primary focus:outline-none focus:ring-1 focus:ring-purple-primary"
               />
-              <div className="flex gap-1">
+              <div className="flex flex-wrap gap-1">
                 {[15, 30, 45, 60, 90].map((m) => (
                   <button
                     key={m}
                     type="button"
                     onClick={() => setMinutes(String(m))}
-                    className={`rounded-md px-2 py-1 text-xs font-mono transition-colors ${
+                    className={`rounded-md px-2.5 py-1.5 text-xs font-mono transition-colors ${
                       minutes === String(m)
                         ? "bg-purple-muted text-purple-accent"
                         : "bg-background text-text-muted hover:text-text-primary"

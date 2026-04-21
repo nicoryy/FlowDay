@@ -90,21 +90,21 @@ export function Tasks() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-semibold text-text-primary">Tarefas</h2>
+          <h2 className="text-xl sm:text-2xl font-semibold text-text-primary">Tarefas</h2>
           <p className="text-text-secondary mt-1 text-sm">
             {tasks.length} tarefa{tasks.length !== 1 ? "s" : ""}
           </p>
         </div>
         <button
           onClick={openCreate}
-          className="flex items-center gap-2 rounded-lg bg-purple-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-purple-hover"
+          className="flex items-center gap-2 rounded-lg bg-purple-primary px-3 sm:px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-purple-hover"
         >
           <Plus size={16} />
-          Nova tarefa
+          <span className="hidden xs:inline">Nova tarefa</span>
         </button>
       </div>
 

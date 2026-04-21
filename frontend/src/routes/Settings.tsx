@@ -73,21 +73,21 @@ export function Settings() {
   }
 
   return (
-    <div className="space-y-6 max-w-lg">
+    <div className="space-y-4 sm:space-y-6 w-full sm:max-w-lg">
       <div>
-        <h2 className="text-2xl font-semibold text-text-primary">Configurações</h2>
+        <h2 className="text-xl sm:text-2xl font-semibold text-text-primary">Configurações</h2>
         <p className="text-text-secondary mt-1 text-sm">Janela de trabalho e pausas</p>
       </div>
 
       <form onSubmit={handleSave} className="space-y-6">
         {/* Work window */}
-        <section className="rounded-lg border border-border bg-background-secondary p-5 space-y-4">
+        <section className="rounded-lg border border-border bg-background-secondary p-4 sm:p-5 space-y-4">
           <h3 className="text-sm font-medium text-text-primary flex items-center gap-2">
             <Clock size={14} className="text-purple-accent" />
             Janela de trabalho
           </h3>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 xs:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-xs text-text-muted uppercase tracking-wide">Início</label>
               <input
@@ -119,10 +119,10 @@ export function Settings() {
         </section>
 
         {/* Breaks */}
-        <section className="rounded-lg border border-border bg-background-secondary p-5 space-y-4">
+        <section className="rounded-lg border border-border bg-background-secondary p-4 sm:p-5 space-y-4">
           <h3 className="text-sm font-medium text-text-primary">Pausas automáticas</h3>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 xs:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-xs text-text-muted uppercase tracking-wide">
                 Duração (min)
@@ -156,7 +156,7 @@ export function Settings() {
         </section>
 
         {/* Notifications */}
-        <section className="rounded-lg border border-border bg-background-secondary p-5">
+        <section className="rounded-lg border border-border bg-background-secondary p-4 sm:p-5">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-text-primary">Notificações</p>

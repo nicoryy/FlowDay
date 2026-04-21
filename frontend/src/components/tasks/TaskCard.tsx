@@ -31,7 +31,7 @@ export function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
   };
 
   return (
-    <div className="group flex items-center gap-4 rounded-lg border border-border bg-background-secondary px-4 py-3 transition-colors hover:border-border/80 hover:bg-background-tertiary">
+    <div className="group flex items-center gap-3 sm:gap-4 rounded-lg border border-border bg-background-secondary px-3 sm:px-4 py-3 transition-colors hover:border-border/80 hover:bg-background-tertiary">
       {/* Priority indicator */}
       <div
         className={`h-8 w-1 rounded-full flex-shrink-0 ${
@@ -63,8 +63,8 @@ export function TaskCard({ task, onEdit, onDelete }: TaskCardProps) {
         {task.estimated_minutes}m
       </div>
 
-      {/* Actions */}
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      {/* Actions — sempre visíveis em mobile; aparecem no hover em desktop */}
+      <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
         <button
           onClick={() => onEdit(task)}
           className="rounded-md p-1.5 text-text-muted hover:bg-background hover:text-text-primary transition-colors"

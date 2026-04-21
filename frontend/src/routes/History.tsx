@@ -34,15 +34,15 @@ export function History() {
   const hasData = (data?.summary.total_scheduled ?? 0) > 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-semibold text-text-primary">Histórico</h2>
+          <h2 className="text-xl sm:text-2xl font-semibold text-text-primary">Histórico</h2>
           <p className="text-text-secondary mt-1 text-sm">Métricas de produtividade</p>
         </div>
         {/* Period toggle */}
-        <div className="flex rounded-lg border border-border overflow-hidden text-sm">
+        <div className="flex rounded-lg border border-border overflow-hidden text-sm self-start sm:self-auto">
           {(["day", "week"] as StatsPeriod[]).map((p) => (
             <button
               key={p}
