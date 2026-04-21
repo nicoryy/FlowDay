@@ -129,14 +129,19 @@ function TimelineBlock({ block, x, w, sessionId, onMutated, onHoverChange, isHov
   return (
     <g
       transform={`translate(${x}, ${AXIS_H + 4})`}
-      style={{ cursor: isDone ? "default" : "pointer", opacity: isHovered ? 0 : 1 }}
+      style={{
+        cursor: isDone ? "default" : "pointer",
+        opacity: isHovered ? 0 : 1,
+        // When hovered, disable pointer events so the SVG block never fires
+        // onMouseLeave while the HTML overlay is mounted on top — prevents flicker
+        pointerEvents: isHovered ? "none" : "auto",
+      }}
       onClick={() => {
         if (loading || isDone) return;
         if (isActive) completeMutation.mutate();
         else startMutation.mutate();
       }}
       onMouseEnter={() => onHoverChange({ block, x, w })}
-      onMouseLeave={() => onHoverChange(null)}
     >
       {/* Block body */}
       <rect
@@ -437,11 +442,13 @@ export function Timeline({ schedule }: TimelineProps) {
 
   const ticks = hourTicks(workStart, workEnd);
 
-  // Fix: workStart/workEnd are built as "UTC" but represent local time.
-  // Date.now() is a true UTC timestamp. Compensate by stripping the local
-  // timezone offset so both values live in the same "fake-UTC" space.
-  const offsetMs = new Date().getTimezoneOffset() * 60 * 1000; // e.g. UTC-3 → +10_800_000
-  const nowMsAdjusted = Date.now() + offsetMs;
+  // workStart/workEnd = local time expressed as fake-UTC (parseWorkTime adds Z).
+  // Date.now() = true UTC. To align: local 11:22 (UTC-3) = UTC 14:22.
+  // We need "11:22" in fake-UTC space = Date.now() - offsetMs.
+  // getTimezoneOffset() for UTC-3 returns +180 → offsetMs = +10_800_000.
+  // Date.now() - 10_800_000 = UTC11:22 ✓ (NOT +, sign was wrong before)
+  const offsetMs = new Date().getTimezoneOffset() * 60 * 1000;
+  const nowMsAdjusted = Date.now() - offsetMs;
   const nowInRange =
     nowMsAdjusted >= workStart.getTime() && nowMsAdjusted <= workEnd.getTime();
   const nowX = ((nowMsAdjusted - workStart.getTime()) / totalMs) * svgWidth;
