@@ -70,8 +70,6 @@ function hourTicks(workStart: Date, workEnd: Date): Date[] {
 
 interface HoverInfo {
   block: ScheduledBlock;
-  x: number;
-  w: number;
 }
 
 interface BlockProps {
@@ -81,9 +79,10 @@ interface BlockProps {
   sessionId: string;
   onMutated: () => void;
   onHoverChange: (info: HoverInfo | null) => void;
+  onMouseMove: (e: React.MouseEvent) => void;
 }
 
-function TimelineBlock({ block, x, w, sessionId, onMutated, onHoverChange }: BlockProps) {
+function TimelineBlock({ block, x, w, sessionId, onMutated, onHoverChange, onMouseMove }: BlockProps) {
   const qc = useQueryClient();
 
   const startMutation = useMutation({
@@ -134,8 +133,9 @@ function TimelineBlock({ block, x, w, sessionId, onMutated, onHoverChange }: Blo
         if (isActive) completeMutation.mutate();
         else startMutation.mutate();
       }}
-      onMouseEnter={() => onHoverChange({ block, x, w })}
+      onMouseEnter={() => onHoverChange({ block })}
       onMouseLeave={() => onHoverChange(null)}
+      onMouseMove={onMouseMove}
     >
       {/* Block body */}
       <rect
@@ -210,6 +210,7 @@ export function Timeline({ schedule }: TimelineProps) {
   const [svgWidth, setSvgWidth] = useState(MIN_WIDTH);
   const [, forceUpdate] = useState(0);
   const [hovered, setHovered] = useState<HoverInfo | null>(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
     const el = containerRef.current;
@@ -236,16 +237,16 @@ export function Timeline({ schedule }: TimelineProps) {
   const nowInRange = nowMs >= workStart.getTime() && nowMs <= workEnd.getTime();
   const nowX = ((nowMs - workStart.getTime()) / totalMs) * svgWidth;
 
-  // Tooltip positioning — centered on block, above the SVG blocks area
-  const tooltipLeft = hovered ? hovered.x + hovered.w / 2 : 0;
   const tooltipBlock = hovered?.block;
 
   return (
-    <div ref={containerRef} className="relative overflow-x-auto">
+    <>
+    <div ref={containerRef} className="overflow-x-auto">
       <svg
         width={svgWidth}
         height={SVG_H}
         style={{ display: "block", minWidth: MIN_WIDTH }}
+        onMouseMove={(e) => setMousePos({ x: e.clientX, y: e.clientY })}
       >
         {/* Background */}
         <rect width={svgWidth} height={SVG_H} fill="transparent" />
@@ -305,6 +306,7 @@ export function Timeline({ schedule }: TimelineProps) {
               sessionId={schedule.session_id}
               onMutated={() => forceUpdate((n) => n + 1)}
               onHoverChange={setHovered}
+              onMouseMove={(e) => setMousePos({ x: e.clientX, y: e.clientY })}
             />
           );
         })}
@@ -326,40 +328,41 @@ export function Timeline({ schedule }: TimelineProps) {
         )}
       </svg>
 
-      {/* Hover tooltip for all blocks (essential for narrow ones) */}
-      {tooltipBlock && (
-        <div
-          className="pointer-events-none absolute z-20 min-w-[160px] max-w-[220px] rounded-lg border border-border bg-background-secondary px-3 py-2.5 shadow-xl transition-opacity duration-100"
-          style={{
-            left: Math.min(Math.max(tooltipLeft, 80), svgWidth - 80),
-            bottom: "100%",
-            transform: "translateX(-50%)",
-            marginBottom: 4,
-          }}
-        >
-          <p className="text-xs font-medium text-text-primary leading-snug mb-1">
-            {tooltipBlock.task_title}
-          </p>
-          <p className="text-[10px] font-mono text-text-muted">
-            {fmtTime(tooltipBlock.planned_start)}–{fmtTime(tooltipBlock.planned_end)}
-          </p>
-          <div className="flex items-center gap-2 mt-1.5">
-            <span
-              className="h-1.5 w-1.5 rounded-full"
-              style={{ backgroundColor: PRIORITY_COLOR[tooltipBlock.priority] ?? "#6d28d9" }}
-            />
-            <span className="text-[10px] text-text-muted">
-              {PRIORITY_LABEL[tooltipBlock.priority] ?? "—"} · {tooltipBlock.estimated_minutes}min
-            </span>
-          </div>
-          {tooltipBlock.task_status !== "scheduled" && (
-            <p className="text-[10px] text-purple-accent mt-0.5">
-              {STATUS_LABEL[tooltipBlock.task_status] ?? tooltipBlock.task_status}
-            </p>
-          )}
-        </div>
-      )}
     </div>
+
+    {/* Tooltip rendered at fixed viewport coords — bypasses overflow-x-auto clipping */}
+    {tooltipBlock && (
+      <div
+        className="pointer-events-none fixed z-50 min-w-[160px] max-w-[220px] rounded-lg border border-border bg-background-secondary px-3 py-2.5 shadow-xl"
+        style={{
+          left: mousePos.x,
+          top: mousePos.y - 12,
+          transform: "translateX(-50%) translateY(-100%)",
+        }}
+      >
+        <p className="text-xs font-medium text-text-primary leading-snug mb-1">
+          {tooltipBlock.task_title}
+        </p>
+        <p className="text-[10px] font-mono text-text-muted">
+          {fmtTime(tooltipBlock.planned_start)}–{fmtTime(tooltipBlock.planned_end)}
+        </p>
+        <div className="flex items-center gap-2 mt-1.5">
+          <span
+            className="h-1.5 w-1.5 rounded-full"
+            style={{ backgroundColor: PRIORITY_COLOR[tooltipBlock.priority] ?? "#6d28d9" }}
+          />
+          <span className="text-[10px] text-text-muted">
+            {PRIORITY_LABEL[tooltipBlock.priority] ?? "—"} · {tooltipBlock.estimated_minutes}min
+          </span>
+        </div>
+        {tooltipBlock.task_status !== "scheduled" && (
+          <p className="text-[10px] text-purple-accent mt-0.5">
+            {STATUS_LABEL[tooltipBlock.task_status] ?? tooltipBlock.task_status}
+          </p>
+        )}
+      </div>
+    )}
+    </>
   );
 }
 

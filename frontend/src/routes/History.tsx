@@ -96,6 +96,12 @@ export function History() {
               highlight
             />
             <StatsCard
+              label="Abandonadas"
+              value={String(data.summary.total_abandoned)}
+              sub="revertidas para A Fazer"
+              negative={data.summary.total_abandoned > 0}
+            />
+            <StatsCard
               label="Tempo registrado"
               value={fmtMinutes(data.summary.total_logged_minutes)}
               sub={period === "week" ? "nos últimos 7 dias" : "hoje"}
@@ -110,11 +116,6 @@ export function History() {
                   ? "abaixo da estimativa"
                   : "na estimativa"
               }
-            />
-            <StatsCard
-              label="Taxa de conclusão"
-              value={`${Math.round(data.summary.completion_rate * 100)}%`}
-              sub={period === "week" ? "média semanal" : "hoje"}
             />
           </div>
 

@@ -66,8 +66,15 @@ export interface ExecutionLog {
   actual_start: string | null;
   actual_end: string | null;
   completed: boolean;
+  abandoned: boolean;
   notes: string | null;
   created_at: string;
+}
+
+export interface ExecutionLogRevertRead {
+  task_id: string;
+  previous_status: string;
+  log_id: string | null;
 }
 
 export interface ExecutionLogCreate {
@@ -107,6 +114,7 @@ export interface DailyStat {
   date: string;
   scheduled: number;
   done: number;
+  abandoned: number;
   logged_minutes: number;
   completion_rate: number;
 }
@@ -115,12 +123,14 @@ export interface PriorityStat {
   priority: 1 | 2 | 3;
   label: string;
   done: number;
+  abandoned: number;
   total_minutes: number;
 }
 
 export interface StatsSummary {
   total_scheduled: number;
   total_done: number;
+  total_abandoned: number;
   completion_rate: number;
   total_logged_minutes: number;
   avg_deviation_minutes: number;

@@ -52,6 +52,21 @@ function columnOf(task: Task): ColumnId {
   return "todo";
 }
 
+// Which column transitions are allowed (from -> to)
+const ALLOWED_FORWARD: Record<ColumnId, ColumnId[]> = {
+  todo: ["in_progress"],
+  in_progress: ["done"],
+  done: [],
+  overflow: [],
+};
+
+const ALLOWED_BACKWARD: Record<ColumnId, ColumnId[]> = {
+  todo: [],
+  in_progress: ["todo"],
+  done: ["todo", "in_progress"],
+  overflow: ["todo"],
+};
+
 interface KanbanBoardProps {
   sessionId: string | null;
 }
@@ -95,6 +110,18 @@ export function KanbanBoard({ sessionId }: KanbanBoardProps) {
     onError: (e) => toast.error(e instanceof ApiError ? e.message : "Erro ao concluir"),
   });
 
+  const revertMutation = useMutation({
+    mutationFn: (task: Task) => logsApi.revert(task.id),
+    onSuccess: (result, task) => {
+      const from = result.previous_status === "done" ? "Concluído" :
+                   result.previous_status === "in_progress" ? "Em andamento" : result.previous_status;
+      toast.info(`"${task.title}" revertido de ${from} para A Fazer`);
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+      qc.invalidateQueries({ queryKey: ["schedule"] });
+    },
+    onError: (e) => toast.error(e instanceof ApiError ? e.message : "Erro ao reverter"),
+  });
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
   );
@@ -108,23 +135,25 @@ export function KanbanBoard({ sessionId }: KanbanBoardProps) {
     const task = tasks.find((t) => t.id === taskId);
     if (!task) return;
 
-    const currentColumn = columnOf(task);
-    if (currentColumn === targetColumn) return;
+    const from = columnOf(task);
+    if (from === targetColumn) return;
 
-    // todo -> in_progress: start
-    if (targetColumn === "in_progress" && currentColumn === "todo") {
-      startMutation.mutate(task);
+    const isForward = ALLOWED_FORWARD[from].includes(targetColumn);
+    const isBackward = ALLOWED_BACKWARD[from].includes(targetColumn);
+
+    if (isForward) {
+      if (targetColumn === "in_progress") startMutation.mutate(task);
+      else if (targetColumn === "done") completeMutation.mutate(task);
       return;
     }
 
-    // in_progress -> done: complete
-    if (targetColumn === "done" && currentColumn === "in_progress") {
-      completeMutation.mutate(task);
+    if (isBackward) {
+      // All backward moves revert to pending and record abandonment
+      revertMutation.mutate(task);
       return;
     }
 
-    // other transitions: not supported without extra endpoints
-    toast.info("Arraste de 'A Fazer' para 'Em Andamento', ou de 'Em Andamento' para 'Concluído'.");
+    toast.info("Movimento não permitido entre essas colunas.");
   }
 
   if (isLoading) {

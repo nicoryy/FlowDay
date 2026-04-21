@@ -33,18 +33,18 @@ class StatsService:
         daily_map: dict[datetime.date, dict] = {}
         for i in range(num_days):
             d = date_from + datetime.timedelta(days=i)
-            daily_map[d] = {"scheduled": 0, "done": 0, "logged_minutes": 0, "deviations": []}
+            daily_map[d] = {"scheduled": 0, "done": 0, "abandoned": 0, "logged_minutes": 0, "deviations": []}
 
         total_scheduled = 0
         total_done = 0
+        total_abandoned = 0
         total_logged_minutes = 0
         deviations: list[float] = []
 
-        # priority buckets: {priority: {done, total_minutes}}
         priority_map: dict[int, dict] = {
-            1: {"done": 0, "total_minutes": 0},
-            2: {"done": 0, "total_minutes": 0},
-            3: {"done": 0, "total_minutes": 0},
+            1: {"done": 0, "abandoned": 0, "total_minutes": 0},
+            2: {"done": 0, "abandoned": 0, "total_minutes": 0},
+            3: {"done": 0, "abandoned": 0, "total_minutes": 0},
         }
 
         for log, task in rows:
@@ -53,14 +53,20 @@ class StatsService:
             if bucket is None:
                 continue
 
+            p = task.priority if task.priority in priority_map else 3
+
+            if log.abandoned:
+                bucket["abandoned"] += 1
+                total_abandoned += 1
+                priority_map[p]["abandoned"] += 1
+                continue
+
             bucket["scheduled"] += 1
             total_scheduled += 1
 
             if log.completed:
                 bucket["done"] += 1
                 total_done += 1
-
-                p = task.priority if task.priority in priority_map else 3
                 priority_map[p]["done"] += 1
 
                 if log.actual_start and log.actual_end:
@@ -68,15 +74,14 @@ class StatsService:
                     bucket["logged_minutes"] += int(real_min)
                     total_logged_minutes += int(real_min)
                     priority_map[p]["total_minutes"] += int(real_min)
-                    deviation = real_min - task.estimated_minutes
-                    deviations.append(deviation)
-                    bucket["deviations"].append(deviation)
+                    deviations.append(real_min - task.estimated_minutes)
 
         daily = [
             DailyStat(
                 date=d,
                 scheduled=v["scheduled"],
                 done=v["done"],
+                abandoned=v["abandoned"],
                 logged_minutes=v["logged_minutes"],
                 completion_rate=round(v["done"] / v["scheduled"], 3) if v["scheduled"] else 0.0,
             )
@@ -88,6 +93,7 @@ class StatsService:
                 priority=p,
                 label=PRIORITY_LABELS[p],
                 done=vals["done"],
+                abandoned=vals["abandoned"],
                 total_minutes=vals["total_minutes"],
             )
             for p, vals in priority_map.items()
@@ -96,6 +102,7 @@ class StatsService:
         summary = StatsSummary(
             total_scheduled=total_scheduled,
             total_done=total_done,
+            total_abandoned=total_abandoned,
             completion_rate=round(total_done / total_scheduled, 3) if total_scheduled else 0.0,
             total_logged_minutes=total_logged_minutes,
             avg_deviation_minutes=round(sum(deviations) / len(deviations), 1) if deviations else 0.0,

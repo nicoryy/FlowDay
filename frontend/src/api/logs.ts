@@ -1,5 +1,5 @@
 import { api } from "./client";
-import type { ExecutionLog, ExecutionLogCreate, ExecutionLogUpdate } from "./types";
+import type { ExecutionLog, ExecutionLogCreate, ExecutionLogRevertRead, ExecutionLogUpdate } from "./types";
 
 export const logsApi = {
   start: (payload: ExecutionLogCreate) => api.post<ExecutionLog>("/logs", payload),
@@ -13,4 +13,6 @@ export const logsApi = {
   },
   getActive: (taskId: string) =>
     api.get<ExecutionLog | null>(`/logs/active/${taskId}`),
+  revert: (taskId: string) =>
+    api.post<ExecutionLogRevertRead>(`/logs/revert/${taskId}`, {}),
 };

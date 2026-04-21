@@ -31,6 +31,16 @@ class LogRepository:
         )
         return result.scalar_one_or_none()
 
+    async def get_last_for_task(self, task_id: str) -> ExecutionLog | None:
+        """Return the most recent non-abandoned log for a task (active or completed)."""
+        result = await self._session.execute(
+            select(ExecutionLog)
+            .where(ExecutionLog.task_id == task_id, ExecutionLog.abandoned == False)  # noqa: E712
+            .order_by(ExecutionLog.created_at.desc())
+            .limit(1)
+        )
+        return result.scalar_one_or_none()
+
     async def list(
         self,
         date: datetime.date | None = None,

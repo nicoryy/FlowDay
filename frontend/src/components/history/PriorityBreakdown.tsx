@@ -27,7 +27,11 @@ export function PriorityBreakdown({ data }: PriorityBreakdownProps) {
               <span className="text-text-secondary">{item.label}</span>
             </div>
             <span className="font-mono text-text-muted">
-              {item.done} tarefa{item.done !== 1 ? "s" : ""} · {item.total_minutes}min
+              {item.done} concluída{item.done !== 1 ? "s" : ""}
+              {item.abandoned > 0 && (
+                <span className="text-red-400/70"> · {item.abandoned} abandon.</span>
+              )}
+              {item.total_minutes > 0 && ` · ${item.total_minutes}min`}
             </span>
           </div>
           <div className="h-1.5 w-full rounded-full bg-background-tertiary overflow-hidden">

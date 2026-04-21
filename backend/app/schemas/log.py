@@ -22,7 +22,14 @@ class ExecutionLogRead(BaseModel):
     actual_start: datetime.datetime | None
     actual_end: datetime.datetime | None
     completed: bool
+    abandoned: bool
     notes: str | None
     created_at: datetime.datetime
 
     model_config = {"from_attributes": True}
+
+
+class ExecutionLogRevertRead(BaseModel):
+    task_id: str
+    previous_status: str
+    log_id: str | None

@@ -28,6 +28,7 @@ class ExecutionLog(Base):
         DateTime(timezone=True), nullable=True
     )
     completed: Mapped[bool] = mapped_column(Boolean, default=False)
+    abandoned: Mapped[bool] = mapped_column(Boolean, default=False)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime.datetime] = mapped_column(
         DateTime(timezone=True), default=_now

@@ -8,6 +8,7 @@ class DailyStat(BaseModel):
     date: datetime.date
     scheduled: int
     done: int
+    abandoned: int
     logged_minutes: int
     completion_rate: float
 
@@ -16,12 +17,14 @@ class PriorityStat(BaseModel):
     priority: int
     label: str
     done: int
+    abandoned: int
     total_minutes: int
 
 
 class StatsSummary(BaseModel):
     total_scheduled: int
     total_done: int
+    total_abandoned: int
     completion_rate: float
     total_logged_minutes: int
     avg_deviation_minutes: float

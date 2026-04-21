@@ -8,7 +8,7 @@ from app.models.task import TaskStatus
 from app.repositories.audit_repository import AuditRepository
 from app.repositories.log_repository import LogRepository
 from app.repositories.task_repository import TaskRepository
-from app.schemas.log import ExecutionLogCreate, ExecutionLogRead, ExecutionLogUpdate
+from app.schemas.log import ExecutionLogCreate, ExecutionLogRead, ExecutionLogRevertRead, ExecutionLogUpdate
 
 logger = logging.getLogger(__name__)
 
@@ -85,3 +85,32 @@ class LogService:
         if log is None:
             return None
         return ExecutionLogRead.model_validate(log)
+
+    async def revert(self, task_id: str) -> ExecutionLogRevertRead:
+        """Abandon the most recent log for this task and reset it to pending."""
+        task = await self._tasks.get_by_id(task_id)
+        if task is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+
+        previous_status = task.status
+
+        # Find the most recent log (active or completed) to mark as abandoned
+        log = await self._logs.get_last_for_task(task_id)
+        log_id: str | None = None
+        if log is not None and not log.abandoned:
+            log.abandoned = True
+            if log.actual_end is None:
+                log.actual_end = datetime.datetime.now(datetime.timezone.utc)
+            await self._logs.update(log)
+            log_id = log.id
+
+        task.status = TaskStatus.pending.value
+        await self._tasks.update(task)
+
+        await self._audit.log(
+            "log.reverted",
+            {"task_id": task_id, "previous_status": previous_status, "log_id": log_id},
+        )
+        await self._db.commit()
+        logger.info("Task reverted to pending: task=%s previous=%s", task_id, previous_status)
+        return ExecutionLogRevertRead(task_id=task_id, previous_status=previous_status, log_id=log_id)

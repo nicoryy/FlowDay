@@ -3,7 +3,7 @@ import datetime
 from fastapi import APIRouter, Depends, Query, status
 
 from app.deps import get_log_service
-from app.schemas.log import ExecutionLogCreate, ExecutionLogRead, ExecutionLogUpdate
+from app.schemas.log import ExecutionLogCreate, ExecutionLogRead, ExecutionLogRevertRead, ExecutionLogUpdate
 from app.services.log_service import LogService
 
 router = APIRouter(prefix="/api/logs", tags=["logs"])
@@ -41,3 +41,12 @@ async def get_active_log(
     service: LogService = Depends(get_log_service),
 ) -> ExecutionLogRead | None:
     return await service.get_active(task_id)
+
+
+@router.post("/revert/{task_id}", response_model=ExecutionLogRevertRead)
+async def revert_task(
+    task_id: str,
+    service: LogService = Depends(get_log_service),
+) -> ExecutionLogRevertRead:
+    """Abandon the most recent log and reset the task to pending."""
+    return await service.revert(task_id)
