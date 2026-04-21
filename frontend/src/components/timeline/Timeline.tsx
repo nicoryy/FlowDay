@@ -160,7 +160,7 @@ function TimelineBlock({ block, x, w, sessionId, onMutated, onHoverChange, isHov
         <>
           <text
             x={10}
-            y={20}
+            y={17}
             fontSize={11}
             fontFamily="Outfit, sans-serif"
             fontWeight={500}
@@ -171,7 +171,7 @@ function TimelineBlock({ block, x, w, sessionId, onMutated, onHoverChange, isHov
           </text>
           <text
             x={10}
-            y={34}
+            y={32}
             fontSize={9}
             fontFamily="JetBrains Mono, monospace"
             fill={textColor}
@@ -212,14 +212,23 @@ interface HoverOverlayProps {
   x: number;
   w: number;
   svgWidth: number;
+  onBeginClose: () => void;
   onClose: () => void;
   onAction: () => void;
   sessionId: string;
 }
 
-function HoverOverlay({ block, x, w, svgWidth, onClose, onAction, sessionId }: HoverOverlayProps) {
+function HoverOverlay({ block, x, w, svgWidth, onBeginClose, onClose, onAction, sessionId }: HoverOverlayProps) {
   const qc = useQueryClient();
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [targetW, setTargetW] = useState(w);
   const [expanded, setExpanded] = useState(false);
+
+  function handleClose() {
+    onBeginClose();    // restore SVG block visibility immediately
+    setExpanded(false); // trigger CSS collapse animation
+    // onClose (unmount) will be called by onTransitionEnd when animation finishes
+  }
 
   const startMutation = useMutation({
     mutationFn: () =>
@@ -249,10 +258,18 @@ function HoverOverlay({ block, x, w, svgWidth, onClose, onAction, sessionId }: H
   });
 
   useEffect(() => {
-    // trigger expand animation on next frame
-    const id = requestAnimationFrame(() => setExpanded(true));
+    // Measure actual content width before animating — scrollWidth works even when
+    // the parent has overflow:hidden because the inner div has whiteSpace:nowrap
+    const id = requestAnimationFrame(() => {
+      if (contentRef.current) {
+        const natural = contentRef.current.scrollWidth + 10;
+        const clamped = Math.min(natural, svgWidth - x);
+        setTargetW(Math.max(clamped, w));
+      }
+      setExpanded(true);
+    });
     return () => cancelAnimationFrame(id);
-  }, []);
+  }, [svgWidth, x, w]);
 
   const status = block.task_status;
   const color = PRIORITY_COLOR[block.priority] ?? "#6d28d9";
@@ -264,10 +281,7 @@ function HoverOverlay({ block, x, w, svgWidth, onClose, onAction, sessionId }: H
   const borderColor = isDone ? "#16a34a66" : isActive ? "#7c3aed" : "#27272a";
   const textColor = isDone ? "#4ade80" : isActive ? "#c4b5fd" : "#f4f4f5";
 
-  // Expanded width: grow to show content but never exceed SVG right edge
-  const expandedW = Math.min(Math.max(w + 140, 200), svgWidth - x);
-  const currentW = expanded ? expandedW : w;
-  const currentH = expanded ? BLOCK_H + 20 : BLOCK_H;
+  const currentW = expanded ? targetW : w;
 
   return (
     <div
@@ -276,17 +290,17 @@ function HoverOverlay({ block, x, w, svgWidth, onClose, onAction, sessionId }: H
         left: x,
         top: AXIS_H + 4,
         width: currentW,
-        height: currentH,
+        height: BLOCK_H,
         overflow: "hidden",
-        transition: "width 200ms ease-in-out, height 200ms ease-in-out",
+        transition: "width 200ms ease-in-out",
         cursor: isDone ? "default" : "pointer",
-        borderRadius: 6,
         border: `1.5px solid ${borderColor}`,
         background: bgColor,
         zIndex: 10,
         backdropFilter: "blur(4px)",
       }}
-      onMouseLeave={onClose}
+      onMouseLeave={handleClose}
+      onTransitionEnd={() => { if (!expanded) onClose(); }}
       onClick={() => {
         if (loading || isDone) return;
         if (isActive) completeMutation.mutate();
@@ -307,8 +321,11 @@ function HoverOverlay({ block, x, w, svgWidth, onClose, onAction, sessionId }: H
         }}
       />
 
-      {/* Content */}
-      <div style={{ paddingLeft: 10, paddingRight: 8, paddingTop: 8, paddingBottom: 6 }}>
+      {/* Content — ref used to measure scrollWidth before animating */}
+      <div
+        ref={contentRef}
+        style={{ paddingLeft: 10, paddingRight: 8, paddingTop: 4, paddingBottom: 6, width: "max-content" }}
+      >
         <p
           style={{
             fontSize: 11,
@@ -317,8 +334,6 @@ function HoverOverlay({ block, x, w, svgWidth, onClose, onAction, sessionId }: H
             color: textColor,
             margin: 0,
             whiteSpace: "nowrap",
-            overflow: "hidden",
-            textOverflow: "ellipsis",
           }}
         >
           {block.task_title}
@@ -329,13 +344,13 @@ function HoverOverlay({ block, x, w, svgWidth, onClose, onAction, sessionId }: H
             fontFamily: "JetBrains Mono, monospace",
             color: textColor,
             opacity: 0.6,
-            margin: "4px 0 0",
+            margin: "1px 0 0",
             whiteSpace: "nowrap",
           }}
         >
           {fmtTime(block.planned_start)}–{fmtTime(block.planned_end)}
         </p>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <span
             style={{
               fontSize: 8,
@@ -369,6 +384,8 @@ function HoverOverlay({ block, x, w, svgWidth, onClose, onAction, sessionId }: H
               {STATUS_LABEL[block.task_status] ?? block.task_status}
             </span>
           )}
+          {/* Spacer for action icon */}
+          <span style={{ display: "inline-block", width: 22 }} />
         </div>
       </div>
 
@@ -419,7 +436,11 @@ export function Timeline({ schedule }: TimelineProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [svgWidth, setSvgWidth] = useState(MIN_WIDTH);
   const [, forceUpdate] = useState(0);
-  const [hovered, setHovered] = useState<HoverInfo | null>(null);
+  // hoveredId: controls SVG block opacity (null = block visible)
+  // overlayInfo: controls HoverOverlay mount (null = unmounted)
+  // Separating them allows the overlay to animate closed while SVG block is already visible
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [overlayInfo, setOverlayInfo] = useState<HoverInfo | null>(null);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -517,8 +538,10 @@ export function Timeline({ schedule }: TimelineProps) {
               w={w}
               sessionId={schedule.session_id}
               onMutated={() => forceUpdate((n) => n + 1)}
-              onHoverChange={setHovered}
-              isHovered={hovered?.block.id === block.id}
+              onHoverChange={(info) => {
+                if (info) { setHoveredId(info.block.id); setOverlayInfo(info); }
+              }}
+              isHovered={hoveredId === block.id}
             />
           );
         })}
@@ -541,15 +564,17 @@ export function Timeline({ schedule }: TimelineProps) {
       </svg>
 
       {/* HTML overlay for hovered block — enables smooth CSS width/height animation */}
-      {hovered && (
+      {overlayInfo && (
         <HoverOverlay
-          block={hovered.block}
-          x={hovered.x}
-          w={hovered.w}
+          block={overlayInfo.block}
+          x={overlayInfo.x}
+          w={overlayInfo.w}
           svgWidth={svgWidth}
-          onClose={() => setHovered(null)}
+          onBeginClose={() => setHoveredId(null)}
+          onClose={() => setOverlayInfo(null)}
           onAction={() => {
-            setHovered(null);
+            setHoveredId(null);
+            setOverlayInfo(null);
             forceUpdate((n) => n + 1);
           }}
           sessionId={schedule.session_id}
