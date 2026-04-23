@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Save, Clock } from "lucide-react";
+import { Save, Clock, Link2, Unlink } from "lucide-react";
 import { configApi } from "@/api/config";
 import { toast } from "@/stores/toast";
 import { ApiError } from "@/api/client";
+import { getStoredApiUrl, setStoredApiUrl, clearStoredApiUrl } from "@/stores/apiUrl";
 import type { UserConfigUpdate } from "@/api/types";
 
 function timeToMinutes(t: string): number {
@@ -13,6 +14,18 @@ function timeToMinutes(t: string): number {
 
 export function Settings() {
   const qc = useQueryClient();
+  const [apiUrl, setApiUrl] = useState(() => getStoredApiUrl() ?? "");
+
+  const saveApiUrl = () => {
+    const clean = apiUrl.replace(/\/+$/, "");
+    if (!clean) return;
+    setStoredApiUrl(clean);
+    toast.success("URL da API atualizada!");
+  };
+
+  const disconnectApi = () => {
+    clearStoredApiUrl();
+  };
 
   const { data: config, isLoading } = useQuery({
     queryKey: ["config"],
@@ -80,6 +93,42 @@ export function Settings() {
       </div>
 
       <form onSubmit={handleSave} className="space-y-6">
+        {/* API URL */}
+        <section className="rounded-lg border border-border bg-background-secondary p-4 sm:p-5 space-y-4">
+          <h3 className="text-sm font-medium text-text-primary flex items-center gap-2">
+            <Link2 size={14} className="text-purple-accent" />
+            Conexão com o backend
+          </h3>
+          <div className="space-y-1.5">
+            <label className="text-xs text-text-muted uppercase tracking-wide">URL da API</label>
+            <input
+              type="url"
+              value={apiUrl}
+              onChange={(e) => setApiUrl(e.target.value)}
+              placeholder="https://flowday.suaurl.com"
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm font-mono text-text-primary placeholder:text-text-muted focus:border-purple-primary focus:outline-none focus:ring-1 focus:ring-purple-primary"
+            />
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={saveApiUrl}
+              disabled={!apiUrl.trim()}
+              className="flex items-center gap-1.5 rounded-lg bg-purple-primary px-4 py-2 text-sm font-medium text-white hover:bg-purple-hover transition-colors disabled:opacity-40"
+            >
+              <Save size={13} />
+              Atualizar URL
+            </button>
+            <button
+              type="button"
+              onClick={disconnectApi}
+              className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-4 py-2 text-sm text-red-400 hover:border-red-400/50 transition-colors"
+            >
+              <Unlink size={13} />
+              Desconectar
+            </button>
+          </div>
+        </section>
         {/* Work window */}
         <section className="rounded-lg border border-border bg-background-secondary p-4 sm:p-5 space-y-4">
           <h3 className="text-sm font-medium text-text-primary flex items-center gap-2">

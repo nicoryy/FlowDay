@@ -1,4 +1,4 @@
-const BASE = "/api";
+import { getStoredApiUrl } from "@/stores/apiUrl";
 
 export class ApiError extends Error {
   constructor(
@@ -9,8 +9,14 @@ export class ApiError extends Error {
   }
 }
 
+function getBase(): string {
+  const url = getStoredApiUrl();
+  if (!url) throw new ApiError(0, "API_URL_NOT_CONFIGURED");
+  return `${url}/api`;
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
+  const res = await fetch(`${getBase()}${path}`, {
     headers: { "Content-Type": "application/json", ...init?.headers },
     ...init,
   });
