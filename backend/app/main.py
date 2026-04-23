@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import async_session_factory
 from app.repositories.config_repository import ConfigRepository
+from app.config import settings
 from app.routers import config, logs, schedule, stats, tasks
 
 logging.basicConfig(level=logging.INFO)
@@ -32,7 +33,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=settings.allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
